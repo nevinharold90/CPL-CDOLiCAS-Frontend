@@ -12,12 +12,13 @@ import Members from "./admin/Routes/Members";
 import BookList from "./admin/Routes/BookList";
 import BookRegister from "./_test/BookRegister";
 
+import EventsPage from "./public-client/Routes/EventPage";
+import ClientHomePage from "./public-client/Routes/Homepage";
+
 // ✅ Import Poppins with weights
 import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/500.css";
 import "@fontsource/poppins/700.css"
-import EventsPage from "./public-client/Routes/EventPage";
-import ClientHomePage from "./public-client/Routes/Homepage";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
