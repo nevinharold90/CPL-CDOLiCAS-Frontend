@@ -3,13 +3,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
-import Layout from "./components/Layout";
-import Login from "./Routes/Login";
-import Dashboard from "./Routes/Dashboard";
-import BookInformation from "./Routes/BookInformation";
-import Maintenance from "./Routes/Maintenance";
-import Members from "./Routes/Members";
-import BookList from "./Routes/BookList";
+import Layout from "./admin/components/Layout";
+import Login from "./admin/Routes/Login";
+import Dashboard from "./admin/Routes/Dashboard";
+import BookInformation from "./admin/Routes/BookInformation";
+import Maintenance from "./admin/Routes/Maintenance";
+import Members from "./admin/Routes/Members";
+import BookList from "./admin/Routes/BookList";
 import BookRegister from "./_test/BookRegister";
 
 // ✅ Import Poppins with weights
