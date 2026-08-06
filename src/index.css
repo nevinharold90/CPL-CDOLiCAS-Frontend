@@ -1,9 +1,6 @@
-/* src/index.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Apply Poppins font globally */
+/* Global font rules or custom styling below */
 body {
     font-family: 'Poppins', sans-serif;
 }

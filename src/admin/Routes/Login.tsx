@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import axios from 'axios';
-import api from '../api/axios'; // 👈 Import the central instance
+import api from '../../_api/axios'; // 👈 This is the centralized call for Axios
 
 
 // Import your custom icons

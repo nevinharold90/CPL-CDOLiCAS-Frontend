@@ -9,7 +9,7 @@ import LogoutIcon from "../assets/logout.png";
 import logo from "../assets/logo.png";
 
 import axios from 'axios';
-import api from '../api/axios'; // 👈 Import the central instance
+import api from '../../_api/axios'; // 👈 This is the centralized call for Axios
 
 
 import {
