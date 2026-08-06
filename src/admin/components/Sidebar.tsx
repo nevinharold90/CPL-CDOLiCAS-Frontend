@@ -8,6 +8,27 @@ import { FaGears } from "react-icons/fa6";
 import LogoutIcon from "../assets/logout.png";
 import logo from "../assets/logo.png";
 
+// Dashboard
+import DashboardIcon from "../assets/dashboard-panel-1.png";
+import DashboardActiveIcon from "../assets/dashboard-panel-2.png";
+
+// Book Information
+import BookUserIcon from "../assets/book-user-1.png";
+import BookUserActiveIcon from "../assets/book-user-2.png";
+
+// Book List
+import BookListIcon from "../assets/book-list-1.png";
+import BookListActiveIcon from "../assets/book-list-2.png";
+
+// Members
+import MembersIcon from "../assets/membership-2.png";
+import MembersActiveIcon from "../assets/membership.png";
+
+// Maintenance
+import MaintenanceIcon from "../assets/maintenance-1.png";
+import MaintenanceActiveIcon from "../assets/maintenance-2.png";
+
+
 import axios from 'axios';
 import api from '../../_api/axios'; // 👈 This is the centralized call for Axios
 
@@ -96,13 +117,44 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
   };
 
   const Menus: MenuType[] = [
-    { title: "Dashboard", iconNormal: "/src/assets/dashboard-panel-1.png", iconActive: "/src/assets/dashboard-panel-2.png", path: "/dashboard" },
-    { title: "Book Information", iconNormal: "/src/assets/book-user-1.png", iconActive: "/src/assets/book-user-2.png", path: "/book-information" },
-    { title: "Book List", iconNormal: "/src/assets/book-list-1.png", iconActive: "/src/assets/book-list-2.png", path: "/book-list" },
-    { title: "Members", iconNormal: "/src/assets/membership-2.png", iconActive: "/src/assets/membership.png", path: "/members" },
-    { title: "Setting", icon: <FaGears />, subMenu: ["General", "Security", "Notifications"], key: "settings" },
-    { title: "Maintenance", iconNormal: "/src/assets/maintenance-1.png", iconActive: "/src/assets/maintenance-2.png", path: "/maintenance", gap: true },
-  ];
+  {
+    title: "Dashboard",
+    iconNormal: DashboardIcon,
+    iconActive: DashboardActiveIcon,
+    path: "/dashboard",
+  },
+  {
+    title: "Book Information",
+    iconNormal: BookUserIcon,
+    iconActive: BookUserActiveIcon,
+    path: "/book-information",
+  },
+  {
+    title: "Book List",
+    iconNormal: BookListIcon,
+    iconActive: BookListActiveIcon,
+    path: "/book-list",
+  },
+  {
+    title: "Members",
+    iconNormal: MembersIcon,
+    iconActive: MembersActiveIcon,
+    path: "/members",
+  },
+  {
+    title: "Setting",
+    icon: <FaGears />,
+    subMenu: ["General", "Security", "Notifications"],
+    key: "settings",
+  },
+  {
+    title: "Maintenance",
+    iconNormal: MaintenanceIcon,
+    iconActive: MaintenanceActiveIcon,
+    path: "/maintenance",
+    gap: true,
+  },
+];
 
 
   
@@ -159,7 +211,7 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
             className={`w-10 h-10 rounded-xl object-cover shrink-0 transition-all duration-500 ${open ? "rotate-360" : "rotate-0"}`}
           />
           <h1 className={`text-zinc-100 font-semibold text-xl tracking-tight transition-all duration-300 whitespace-nowrap ${open ? "opacity-100" : "opacity-0 w-0"}`}>
-            Admin Panel
+            CDO LiCAS Admin
           </h1>
         </div>
 
