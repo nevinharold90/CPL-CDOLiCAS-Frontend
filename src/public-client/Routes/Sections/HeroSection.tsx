@@ -188,7 +188,7 @@ const HeroSection = ({
           {/* Lottie Animation */}
           <div className="hidden lg:block">
             <div className="w-full h-157.5 rounded-2xl overflow-hidden">
-              <DotLottieReact src="/src/assets/student.lottie" loop autoplay style={{ width: "100%", height: "100%" }} />
+              <DotLottieReact src="/src/public-client/assets/student.lottie" loop autoplay style={{ width: "100%", height: "100%" }} />
             </div>
           </div>
         </div>
