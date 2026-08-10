@@ -127,6 +127,8 @@ function Navbar({ onOpenContact, onOpenOurStory }: NavbarProps) {
           <Link to="/catalog" className={linkClass}>Catalog</Link>
           <Link to="/donate" className={linkClass}>Donate</Link>
 
+          <Link to="/login" className={linkClass}>Login</Link>
+
           {/* Contact Us */}
           <button onClick={onOpenContact} className={contactClass}>
             Contact Us

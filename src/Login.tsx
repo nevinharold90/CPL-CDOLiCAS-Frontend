@@ -1,14 +1,12 @@
 // src/pages/Login.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import logo from '../assets/logo.png';
 import axios from 'axios';
-import api from '../../_api/axios'; // 👈 This is the centralized call for Axios
+import api from './_api/axios'; // 👈 This is the centralized call for Axios
 
-
-// Import your custom icons
-import eyeOpen from '../assets/eye.png';     // show password (open eye)
-import eyeClosed from '../assets/eye-crossed.png'; // hide password (closed/slashed eye)
+import logo from './admin/assets/logo.png';
+import eyeOpen from './admin/assets/eye.png';     // show password (open eye)
+import eyeClosed from './admin/assets/eye-crossed.png'; // hide password (closed/slashed eye)
 
 // Define API Axios instance outside component to avoid re-creations on render
 // const api = axios.create({
@@ -40,8 +38,45 @@ const Login = () => {
   // UI states for API handling
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const navigate = useNavigate();
+
+  // Check for active session when mounting /login
+  useEffect(() => {
+    const checkActiveSession = () => {
+      const token = localStorage.getItem('auth_token');
+      const savedUser = localStorage.getItem('user');
+
+      if (token && savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          const role = user?.role;
+
+          console.log('Active session detected on /login. Role:', role);
+
+          if (role === 'superadmin' || role === 'admin') {
+            navigate('/dashboard', { replace: true });
+            return;
+          }
+
+          if (role === 'client') {
+            navigate('/', { replace: true });
+            return;
+          }
+        } catch (e) {
+          // Clear corrupted data if JSON parsing fails
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user');
+        }
+      }
+
+      // No active valid session; allow login UI to render
+      setCheckingAuth(false);
+    };
+
+    checkActiveSession();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,33 +89,37 @@ const Login = () => {
 
       console.log('Login successful:', response.data);
 
-      // Save token if returning bearer token from Laravel Sanctum/Passport
-      if (response.data.token) {
-        localStorage.setItem('auth_token', response.data.token);
-      }
-
-      // 1. Extract the user role and token from the response
+      // Extract user role and token from response
       const userRole = response.data?.user?.role;
       const token = response.data?.token;
 
-      // 2. Validate role: allow ONLY 'superadmin' or 'admin'
-      if (userRole !== 'superadmin' && userRole !== 'admin') {
-        setErrorMessage('Access denied: Only administrators can access this system.');
-        return; // Stop execution here
+      // 1. Validate role: allow 'superadmin', 'admin', OR 'client'
+      if (userRole !== 'superadmin' && userRole !== 'admin' && userRole !== 'client') {
+        setErrorMessage('Access denied: Unauthorized role or insufficient permissions.');
+        return; // Stop execution for invalid/unknown roles
       }
 
-      // 3. Save token and user info if role check passes
+      // 2. Save auth data ONCE after role validation passes
       if (token) {
         localStorage.setItem('auth_token', token);
       }
+      if (response.data?.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
 
-      // Optional: save user object for quick access across your app
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      console.log('User role:', userRole);
 
-      // Navigate to dashboard on success
-      navigate('/dashboard');
+      // 3. Role-based navigation
+      if (userRole === 'superadmin' || userRole === 'admin') {
+        console.log('Redirecting to admin dashboard...');
+        navigate('/dashboard');
+      } else if (userRole === 'client') {
+        console.log('Client logged in (redirect temporary/pending)...');
+        // TODO: Temporary client redirect
+        // navigate('/dashboard');
+      }
 
-  } catch (error) {
+    } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response) {
           const message = error.response.data?.message || 'Invalid username or password.';
@@ -97,6 +136,11 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  // Prevent flash of login screen while evaluating active token
+  if (checkingAuth) {
+    return null; 
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 md:p-8 font-[Poppins]">
@@ -120,7 +164,7 @@ const Login = () => {
               <h1 className="text-3xl font-bold text-zinc-100 tracking-tight">
                 City Public Library
               </h1>
-              <p className="text-zinc-400 text-sm">Admin Login</p>
+              <p className="text-zinc-400 text-sm">Login</p>
             </div>
 
             {/* Error Message Banner */}
@@ -192,9 +236,18 @@ const Login = () => {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-zinc-500">
-              Contact the library admin if you need access.
-            </p>
+            <div className="flex alias items-center justify-center space-x-4">
+              <p  className="mt-6 text-center text-sm text-zinc-500">
+                <a href="/forgot-password" className="text-indigo-400 hover:text-indigo-300">
+                  Forgot Password?
+                </a>
+              </p>
+              {/* <p className="mt-6 text-center text-sm text-zinc-500">
+                <a href="/forgot-password" className="text-indigo-400 hover:text-indigo-300">
+                  Contact Admin
+                </a>
+              </p> */}
+            </div>
           </div>
 
           {/* Right: Image Area */}
@@ -207,7 +260,7 @@ const Login = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-zinc-950/60 to-transparent" />
             <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
               <p className="text-2xl font-semibold text-zinc-200 drop-shadow-md">
-                Library Admin Panel System
+                Login Portal
               </p>
               <p className="text-sm text-zinc-300/70 mt-2">
                 Manage books, track inventory, and organize your collection

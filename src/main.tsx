@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
 import Layout from "./admin/components/Layout";
-import Login from "./admin/Routes/Login";
+import Login from "./Login";
 import Dashboard from "./admin/Routes/Dashboard";
 import BookInformation from "./admin/Routes/BookInformation";
 import Maintenance from "./admin/Routes/Maintenance";
@@ -27,6 +27,7 @@ createRoot(document.getElementById("root")!).render(
 
         {/* Login (no sidebar) */}
         <Route path="/" element={<ClientHomePage />} />
+        <Route path="/login" element={<Login />} />
 
         {/* Pages with sidebar */}
         <Route element={<Layout />}>

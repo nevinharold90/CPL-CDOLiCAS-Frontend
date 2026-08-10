@@ -92,7 +92,7 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
       localStorage.removeItem('user');       // Delete user details if you stored any
       
       setLoading(false);
-      navigate('/');                    // Kick user back to Login screen
+      navigate('/login');                    // Kick user back to Login screen
     }
   };
 

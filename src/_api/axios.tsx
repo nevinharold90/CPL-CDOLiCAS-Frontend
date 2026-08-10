@@ -2,12 +2,12 @@
 import axios from 'axios';
 
     const api = axios.create({
-        baseURL: import.meta.env.VITE_API_BASE_URL,
+        baseURL: import.meta.env.VITE_BACKEND_API, // Laravel API base URL
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         },
-        withCredentials: true, // Configured ONCE for your entire app
+        withCredentials: true, // Configured ONC entire app
     });
 
 export default api;

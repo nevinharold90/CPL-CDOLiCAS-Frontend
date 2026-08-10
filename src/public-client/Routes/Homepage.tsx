@@ -1,5 +1,5 @@
 // src/pages/Homepage.tsx
-import { useState, lazy, useEffect } from "react";
+import { useState, lazy, useEffect, useRef } from "react";
 
 // Lazy imports
 const AboutUsSection = lazy(() => import("./Sections/AboutUsSection"));
@@ -21,6 +21,8 @@ import LazySection from "../components/LazySection";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import Navbar from "../components/Navbar";
 
+import api from "../../_api/axios"; // 👈 This is the centralized call for Axios
+
 const Homepage = () => {
   const [keywordInput, setKeywordInput] = useState("");
   const [eventsInput, setEventsInput] = useState("");
@@ -31,6 +33,33 @@ const Homepage = () => {
   // Modal States
   const [showContactModal, setShowContactModal] = useState(false);
   const [showStoryModal, setShowStoryModal] = useState(false);
+  const hasCheckedSession = useRef(false);
+
+  useEffect(() => {
+    // Stop Strict Mode's second execution in dev mode
+    if (hasCheckedSession.current) return;
+    hasCheckedSession.current = true;
+
+    const checkSession = async () => {
+      const token = localStorage.getItem('auth_token');
+
+      if (!token) {
+        console.log('Active session:', 'No');
+        return;
+      }
+
+      try {
+        await api.get('/user/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('Active session:', 'Yes');
+      } catch (error) {
+        console.log('Active session:', 'No');
+      }
+    };
+
+    checkSession();
+  }, []);
 
   // Prevent background scroll when any modal is open
   useEffect(() => {
