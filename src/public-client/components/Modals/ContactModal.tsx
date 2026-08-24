@@ -105,18 +105,21 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
           <div className="md:w-7/12 p-10 bg-white flex flex-col relative">
             
             {/* Close Button - Inside Right Content, Top Right */}
-            <button
-              onClick={onClose}
-              onMouseEnter={() => setIsCloseHovered(true)}
-              onMouseLeave={() => setIsCloseHovered(false)}
-              className="flex items-center justify-end cursor-pointer"
-            >
-              <img 
-                src={isCloseHovered ? CloseHoverIcon : CloseIcon} 
-                alt="Close" 
-                className="w-5 h-5 transition-all" 
-              />
-            </button>
+            
+            <div className="flex w-full justify-end ">
+              <button
+                onClick={onClose}
+                onMouseEnter={() => setIsCloseHovered(true)}
+                onMouseLeave={() => setIsCloseHovered(false)}
+                className="cursor-pointer p-2 rounded-full hover:bg-gray-100 transition-all absolute top-2 right-4"
+              >
+                <img 
+                  src={isCloseHovered ? CloseHoverIcon : CloseIcon} 
+                  alt="Close" 
+                  className="w-5 h-5 transition-all" 
+                />
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit} className="flex-1 flex flex-col pt-4">
               <div className="space-y-6 flex-1">

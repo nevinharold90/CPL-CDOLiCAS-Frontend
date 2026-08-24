@@ -10,7 +10,7 @@ import BookInformation from "./admin/Routes/BookInformation";
 import Maintenance from "./admin/Routes/Maintenance";
 import Members from "./admin/Routes/Members";
 import BookList from "./admin/Routes/BookList";
-import BookRegister from "./_test/BookRegister";
+import BookRegister from "./admin/Routes/sub-route/Book/BookRegister";
 
 import EventsPage from "./public-client/Routes/EventPage";
 import ClientHomePage from "./public-client/Routes/Homepage";

@@ -6,15 +6,15 @@ import Licas from "../assets/Licas.png";
 const linkClass = `group relative inline-block text-gray-700 font-semibold text-[15px] tracking-wide transition-all duration-300 hover:text-[#025aa7] after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2.5px] after:bg-[#025aa7] after:rounded-full after:w-0 after:transition-all after:duration-300 hover:after:w-full cursor-pointer`;
 
 const contactClass = `group relative inline-block font-semibold text-[15px] tracking-wide 
-                     text-white bg-[#025aa7] hover:bg-[#024d8f] px-6 py-2.5 rounded-2xl 
-                     transition-all duration-300 hover:shadow-lg cursor-pointer
-                     after:content-[''] after:absolute after:left-0 after:-bottom-1 
-                     after:h-[2.5px] after:bg-white after:rounded-full after:w-0 
-                     after:transition-all after:duration-300 hover:after:w-full`;
+                      text-white bg-[#025aa7] hover:bg-[#024d8f] px-6 py-2.5 rounded-2xl 
+                      transition-all duration-300 hover:shadow-lg cursor-pointer
+                      after:content-[''] after:absolute after:left-0 after:-bottom-1 
+                      after:h-[2.5px] after:bg-white after:rounded-full after:w-0 
+                      after:transition-all after:duration-300 hover:after:w-full`;
 
 interface NavbarProps {
   onOpenContact?: () => void;
-  onOpenOurStory?: () => void;     // Only for About Us
+  onOpenOurStory?: () => void;     // Only for About Us 
 }
 
 function Navbar({ onOpenContact, onOpenOurStory }: NavbarProps) {
