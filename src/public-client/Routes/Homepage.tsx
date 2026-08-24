@@ -42,31 +42,31 @@ const Homepage = () => {
   setShowLoginModal(true);        // open the login modal
 };
 
-  useEffect(() => {
-    // Stop Strict Mode's second execution in dev mode
-    if (hasCheckedSession.current) return;
-    hasCheckedSession.current = true;
+  // useEffect(() => {
+  //   // Stop Strict Mode's second execution in dev mode
+  //   if (hasCheckedSession.current) return;
+  //   hasCheckedSession.current = true;
 
-    const checkSession = async () => {
-      const token = localStorage.getItem('auth_token');
+  //   const checkSession = async () => {
+  //     const token = localStorage.getItem('auth_token');
 
-      if (!token) {
-        console.log('Active session:', 'No');
-        return;
-      }
+  //     if (!token) {
+  //       console.log('Active session:', 'No');
+  //       return;
+  //     }
 
-      try {
-        await api.get('/user/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log('Active session:', 'Yes');
-      } catch (error) {
-        console.log('Active session:', 'No');
-      }
-    };
+  //     try {
+  //       await api.get('/user/me', {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       console.log('Active session:', 'Yes');
+  //     } catch (error) {
+  //       console.log('Active session:', 'No');
+  //     }
+  //   };
 
-    checkSession();
-  }, []);
+  //   checkSession();
+  // }, []);
 
   // Prevent background scroll when any modal is open
   useEffect(() => {

@@ -6,6 +6,7 @@ import CategoryIcon from "../../assets/category.png";
 import CatalogIcon from "../../assets/catalog.png";
 import DownIcon from "../../assets/down.png";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { useEffect } from "react";
 
 interface HeroSectionProps {
   keywordInput: string;
@@ -26,6 +27,11 @@ const HeroSection = ({
 }: HeroSectionProps) => {
   const keywordTags = keywordInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
   const eventTags = eventsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+
+  
+  // const hasToken = Boolean(localStorage.getItem("auth_token"));
+
+  // console.log("Active token present from HeroSection:", hasToken);
 
   const showKeywordsPreview = focusedField === "keywords" && keywordTags.length > 0;
   const showEventsPreview = focusedField === "events" && eventTags.length > 0;
