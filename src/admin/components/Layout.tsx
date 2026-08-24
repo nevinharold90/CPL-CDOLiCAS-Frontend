@@ -1,7 +1,8 @@
-// src/components/Layout.tsx
+// src/admin/components/Layout.tsx
 import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
+import AdminSiteIdentity from "./AdminSiteIdentity";
 
 const Layout = () => {
   // Load saved sidebar state
@@ -16,13 +17,17 @@ const Layout = () => {
   }, [open]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-100">
-      <Sidebar open={open} setOpen={setOpen} />
+    <>
+      <AdminSiteIdentity />
 
-      <main className="flex-1 overflow-y-auto transition-all duration-300">
-        <Outlet />
-      </main>
-    </div> 
+      <div className="flex h-screen overflow-hidden bg-zinc-100">
+        <Sidebar open={open} setOpen={setOpen} />
+
+        <main className="flex-1 overflow-y-auto transition-all duration-300">
+          <Outlet />
+        </main>
+      </div>
+    </>
   );
 };
 

@@ -14,10 +14,10 @@ const FeedbackSection = ({ onFeedbackSubmit }: FeedbackSectionProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0 || !message.trim()) return;
-    
-    // Send data to parent (Homepage) instead of showing modal here
+
+    // Send data to parent (Homepage)
     onFeedbackSubmit(rating, message);
-    
+
     // Optional: Reset form immediately
     setRating(0);
     setMessage("");
@@ -25,12 +25,11 @@ const FeedbackSection = ({ onFeedbackSubmit }: FeedbackSectionProps) => {
 
   return (
     <section className="py-35 md:py-32 px-5 md:px-10 lg:px-16 bg-linear-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
-      {/* Your existing flyer decorations and background stay the same */}
+      {/* Background decorations */}
       <div className="absolute inset-0 opacity-40 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(#025aa7_0.8px,transparent_1px)] bg-size-[40px_40px] opacity-10" />
       </div>
 
-      {/* Decorative accents (unchanged) */}
       <div className="absolute top-12 left-12 w-24 h-24 border border-[#025aa7]/20 rounded-2xl rotate-12 hidden lg:block" />
       <div className="absolute top-20 right-16 w-20 h-20 border-2 border-[#025aa7]/10 rounded-full -rotate-6 hidden lg:block" />
       <div className="absolute bottom-16 left-20 w-16 h-16 border border-amber-400/30 rounded-xl -rotate-12 hidden xl:block" />
@@ -51,7 +50,7 @@ const FeedbackSection = ({ onFeedbackSubmit }: FeedbackSectionProps) => {
 
         <div className="bg-white border border-gray-100 rounded-3xl p-10 shadow-xl">
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Star Rating - unchanged */}
+            {/* Star Rating */}
             <div className="text-center">
               <p className="text-gray-700 mb-4">Rate your experience</p>
               <div className="flex justify-center gap-2">
@@ -64,12 +63,12 @@ const FeedbackSection = ({ onFeedbackSubmit }: FeedbackSectionProps) => {
                     onMouseLeave={() => setHover(0)}
                     className="transition-transform hover:scale-110 active:scale-95"
                   >
-                    <img 
-                      src={StarIcon} 
+                    <img
+                      src={StarIcon}
                       alt={`Star ${star}`}
                       className={`w-12 h-12 transition-all duration-200 ${
-                        (hover || rating) >= star 
-                          ? "brightness-110 saturate-150 drop-shadow-sm" 
+                        (hover || rating) >= star
+                          ? "brightness-110 saturate-150 drop-shadow-sm"
                           : "grayscale opacity-40"
                       }`}
                     />
@@ -78,7 +77,7 @@ const FeedbackSection = ({ onFeedbackSubmit }: FeedbackSectionProps) => {
               </div>
             </div>
 
-            {/* Feedback Message - unchanged */}
+            {/* Feedback Message */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Your Feedback</label>
               <textarea

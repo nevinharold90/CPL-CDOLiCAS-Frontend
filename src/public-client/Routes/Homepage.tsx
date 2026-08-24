@@ -20,6 +20,7 @@ import FloatingFeedbackButton from "../components/FloatingFeedbackButton";
 import LazySection from "../components/LazySection";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import Navbar from "../components/Navbar";
+import LoginModal from "../components/Modals/LoginModal";
 
 import api from "../../_api/axios"; // 👈 This is the centralized call for Axios
 
@@ -33,7 +34,13 @@ const Homepage = () => {
   // Modal States
   const [showContactModal, setShowContactModal] = useState(false);
   const [showStoryModal, setShowStoryModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const hasCheckedSession = useRef(false);
+
+  const handleFeedbackLoginClick = () => {
+  setFeedbackData(null);          // close the feedback modal
+  setShowLoginModal(true);        // open the login modal
+};
 
   useEffect(() => {
     // Stop Strict Mode's second execution in dev mode
@@ -66,7 +73,8 @@ const Homepage = () => {
     const isAnyModalOpen = showContactModal || 
                           !!selectedImage || 
                           !!feedbackData ||
-                          showStoryModal;
+                          showStoryModal ||
+                          showLoginModal;
 
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -77,7 +85,7 @@ const Homepage = () => {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [showContactModal, selectedImage, feedbackData, showStoryModal]);
+  }, [showContactModal, selectedImage, feedbackData, showStoryModal, showLoginModal]);
 
   // ESC Key to close all modals
   useEffect(() => {
@@ -87,12 +95,13 @@ const Homepage = () => {
         if (selectedImage) setSelectedImage(null);
         if (feedbackData) setFeedbackData(null);
         if (showStoryModal) setShowStoryModal(false);
+        if (showLoginModal) setShowLoginModal(false);
       }
     };
 
     window.addEventListener("keydown", handleEscKey);
     return () => window.removeEventListener("keydown", handleEscKey);
-  }, [showContactModal, selectedImage, feedbackData, showStoryModal]);
+  }, [showContactModal, selectedImage, feedbackData, showStoryModal, showLoginModal]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -103,6 +112,7 @@ const Homepage = () => {
       
       <Navbar 
         onOpenContact={() => setShowContactModal(true)} 
+        onOpenLogin={() => setShowLoginModal(true)}
       />
 
       <HeroSection
@@ -154,11 +164,18 @@ const Homepage = () => {
         onClose={() => setShowStoryModal(false)} 
       />
 
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
+
       {feedbackData && (
-        <FeedbackModal 
+        <FeedbackModal
           rating={feedbackData.rating}
           message={feedbackData.message}
+          isLoggedIn={false}            // still hardcoded for now – see note below
           onClose={() => setFeedbackData(null)}
+          onLoginClick={handleFeedbackLoginClick}
         />
       )}
 

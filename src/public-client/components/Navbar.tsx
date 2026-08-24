@@ -15,9 +15,10 @@ const contactClass = `group relative inline-block font-semibold text-[15px] trac
 interface NavbarProps {
   onOpenContact?: () => void;
   onOpenOurStory?: () => void;     // Only for About Us 
+  onOpenLogin?: () => void;
 }
 
-function Navbar({ onOpenContact, onOpenOurStory }: NavbarProps) {
+function Navbar({ onOpenContact, onOpenOurStory, onOpenLogin }: NavbarProps) {
   const location = useLocation();
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -127,7 +128,7 @@ function Navbar({ onOpenContact, onOpenOurStory }: NavbarProps) {
           <Link to="/catalog" className={linkClass}>Catalog</Link>
           <Link to="/donate" className={linkClass}>Donate</Link>
 
-          <Link to="/login" className={linkClass}>Login</Link>
+          <button onClick={onOpenLogin} className={linkClass}>Login</button>
 
           {/* Contact Us */}
           <button onClick={onOpenContact} className={contactClass}>
