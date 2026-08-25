@@ -2,50 +2,71 @@
 import { useState, useEffect } from 'react';
 import api from '../_api/axios';
 
+export interface User {
+    id: number;
+    first_name: string;
+    middle_name: string;
+    last_name: string;
+    username: string;
+    email: string;
+    role?: string;
+    employee_id_no?: string;
+    status?: string;
+}
+
 export function useCheckSession() {
-    const [isActive, setIsActive] = useState<boolean | null>(null);
+    // 1. Instantly read from LocalStorage on initial load to prevent UI flickering
+    const [isActive, setIsActive] = useState<boolean | null>(() => {
+        return !!localStorage.getItem('auth_token');
+    });
+    
+    const [user, setUser] = useState<User | null>(() => {
+        try {
+            const savedUser = localStorage.getItem('user_data');
+            return savedUser ? JSON.parse(savedUser) : null;
+        } catch {
+            return null;
+        }
+    });
 
     useEffect(() => {
         const token = localStorage.getItem('auth_token');
 
         console.log("🔍 [ActiveStatusChecker] Initiating Session Check...");
-        console.log("🔑 [ActiveStatusChecker] Token in LocalStorage:", token ? `Exists (${token.substring(0, 15)}...)` : "NULL");
-
+        
         if (!token) {
-        console.warn("🛑 [ActiveStatusChecker] No token found! Skipping /user/me GET call.");
-        setIsActive(false);
-        return;
+            console.warn("🛑 [ActiveStatusChecker] No token found! Skipping /user/me GET call.");
+            setIsActive(false);
+            setUser(null);
+            localStorage.removeItem('user_data'); // Cleanup just in case
+            return;
         }
 
-        // Attempt backend verification call
+        // 2. Perform background backend check to ensure token is still valid
         api.get('/user/me')
         .then((res) => {
             console.log("🟢 [ActiveStatusChecker] /user/me SUCCESS (200 OK):", res.data);
             setIsActive(true);
+            setUser(res.data.user);
+            
+            // 3. Save the freshest data to local storage for the next refresh
+            localStorage.setItem('user_data', JSON.stringify(res.data.user));
         })
         .catch((error) => {
             console.group("🔴 [ActiveStatusChecker] /user/me FAILED!");
             console.log("Full Error Object:", error);
-
-            if (error.response) {
-            console.log("HTTP Status Code:", error.response.status);
-            console.log("Backend Response Headers:", error.response.headers);
-            console.log("Backend Response Body:", error.response.data);
-
-            if (error.response.status === 401) {
-                console.error("⚠️ 401 Unauthorized: The bearer token sent was invalid, expired, or rejected by Laravel Sanctum.");
-                console.log("Request Headers sent by Axios:", error.config?.headers);
-            }
-            } else if (error.request) {
-            console.error("Network Error: Request was made but no response was received from backend.");
-            } else {
-            console.error("Setup Error:", error.message);
-            }
             console.groupEnd();
 
+            // If backend says 401 Unauthorized, wipe everything
+            if (error.response?.status === 401) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_data');
+            }
+
             setIsActive(false);
+            setUser(null);
         });
     }, []);
 
-    return isActive;
+    return { isActive, user };
 }

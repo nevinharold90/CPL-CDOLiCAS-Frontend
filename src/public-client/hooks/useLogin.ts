@@ -8,6 +8,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  first_name?: string;
   role: 'superadmin' | 'admin' | 'client' | string;
 }
 
@@ -20,11 +21,11 @@ interface LoginResponse {
 
 interface UseLoginOptions {
   onSuccess?: (user: User) => void;
-  redirectDelayMs?: number; // default 5000
+  redirectDelayMs?: number; // default 1500ms for quick feedback
 }
 
 export function useLogin(options: UseLoginOptions = {}) {
-  const { onSuccess, redirectDelayMs = 5000 } = options;
+  const { onSuccess, redirectDelayMs = 1500 } = options;
   const navigate = useNavigate();
 
   const [username, setUsername] = useState('');
@@ -36,11 +37,13 @@ export function useLogin(options: UseLoginOptions = {}) {
   const [countdown, setCountdown] = useState(Math.round(redirectDelayMs / 1000));
 
   const hasCheckedSessionOnMount = useRef(false);
-  const sessionStatus = useCheckSession();
+  const { isActive, user } = useCheckSession();  
+  const sessionStatus = isActive; 
 
-  // Helper function to trigger redirection/countdown logic
   const handleRedirectFlow = (userRole: string, user: User) => {
     setIsRedirecting(true);
+    
+    // 1. Immediately notify parent to close modal
     onSuccess?.(user);
 
     let timeLeft = Math.round(redirectDelayMs / 1000);
@@ -52,39 +55,20 @@ export function useLogin(options: UseLoginOptions = {}) {
       if (timeLeft <= 0) clearInterval(intervalId);
     }, 1000);
 
+    // 2. Perform hard reload to '/' after brief feedback timer
     setTimeout(() => {
-      if (userRole === 'superadmin' || userRole === 'admin') {
-        navigate('/dashboard', { replace: true });
-      } else if (userRole === 'client') {
-        console.log('Client session confirmed. Staying on current route.');
-      }
+      window.location.href = '/';
     }, redirectDelayMs);
   };
 
-// 1. Initial Session Check Logic on Component Mount
-useEffect(() => {
-  if (sessionStatus === null) return;
-  if (hasCheckedSessionOnMount.current) return;
-  hasCheckedSessionOnMount.current = true;
+  useEffect(() => {
+    if (sessionStatus === null) return;
+    if (hasCheckedSessionOnMount.current) return;
+    hasCheckedSessionOnMount.current = true;
 
-  const verifyActiveUser = async () => {
-    if (sessionStatus === true) {
-      const storedUserRaw = localStorage.getItem('user');
-      const storedUser: User | null = storedUserRaw ? JSON.parse(storedUserRaw) : null;
-      const userRole = storedUser?.role;
-
-      console.log('Active session detected. User Role:', userRole);
-
-      // ❌ REMOVED: Auto-redirecting on mount.
-      // Admins can now view the public client homepage while logged in.
-    }
     setCheckingSession(false);
-  };
+  }, [sessionStatus]);
 
-  verifyActiveUser();
-}, [sessionStatus]);
-
-  // 2. Form Submission Login Handler (Original restored)
   const handleLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setLoading(true);
@@ -101,8 +85,12 @@ useEffect(() => {
         return;
       }
 
+      // Save both auth_token and user_data to LocalStorage for instant UI updates
       if (token) localStorage.setItem('auth_token', token);
-      if (user) localStorage.setItem('user', JSON.stringify(user));
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('user_data', JSON.stringify(user)); 
+      }
 
       setLoading(false);
       handleRedirectFlow(userRole, user!);
@@ -127,7 +115,7 @@ useEffect(() => {
     username, setUsername,
     password, setPassword,
     loading, errorMessage,
-    checkingSession, // Use this in your UI to show initial session checking state
+    checkingSession,
     isRedirecting, countdown,
     handleLogin,
   };

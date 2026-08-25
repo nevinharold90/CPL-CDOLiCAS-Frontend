@@ -29,15 +29,15 @@ const Login = () => {
 
 const sessionStatus = useCheckSession(); // Invoked here  
 
-  useEffect(() => {
-    if (sessionStatus === null) {
-      console.log("Checking for active session...");
-    } else if (sessionStatus === true) {
-      console.log("Session verified! User is already logged in.");
-    } else if (sessionStatus === false) {
-      console.log("No active session. Ready for manual login.");
-    }
-  }, [sessionStatus]); // Reacts whenever sessionStatus updates
+  // useEffect(() => {
+  //   if (sessionStatus === null) {
+  //     console.log("Checking for active session...");
+  //   } else if (sessionStatus === true) {
+  //     console.log("Session verified! User is already logged in.");
+  //   } else if (sessionStatus === false) {
+  //     console.log("No active session. Ready for manual login.");
+  //   }
+  // }, [sessionStatus]); // Reacts whenever sessionStatus updates
   
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
