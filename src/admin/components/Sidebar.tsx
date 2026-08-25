@@ -2,12 +2,12 @@
 import { useState, type JSX, useRef, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useCheckSession } from "../../utils/ActiveStatusChecker"; // Import the custom hook
 
 import { FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { FaGears } from "react-icons/fa6";
 import LogoutIcon from "../assets/logout.png";
 import logo from "../assets/logo.png";
-
 // Dashboard
 import DashboardIcon from "../assets/dashboard-panel-1.png";
 import DashboardActiveIcon from "../assets/dashboard-panel-2.png";
@@ -68,6 +68,19 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
     inbox: false,
     settings: false,
   });
+
+
+// const sessionStatus = useCheckSession(); // Invoked here  
+
+  // useEffect(() => {
+  //   if (sessionStatus === null) {
+  //     console.log("Checking for active session...");
+  //   } else if (sessionStatus === true) {
+  //     console.log("Session verified! User is already logged in.");
+  //   } else if (sessionStatus === false) {
+  //     console.log("No active session. Ready for manual login.");
+  //   }
+  // }, [sessionStatus]); // Reacts whenever sessionStatus updates
 
   // Handle Logout
   const handleLogout = async () => {

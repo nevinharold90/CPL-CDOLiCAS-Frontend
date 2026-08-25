@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useLogin } from '../../hooks/useLogin';
 import { useSignup } from '../../hooks/useSignup';
+import { Loader2 } from 'lucide-react';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       setTimeout(() => {
         onClose();
         onSuccess?.(); // ← call the extra success handler
-      }, 800);
+      }, 5000);
     },
   });
 
@@ -81,8 +82,9 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
             )}
 
             {isRedirecting ? (
-              <div className="text-center py-8 text-sm text-gray-600">
-                Login successful — redirecting...
+              <div className="flex items-center justify-center py-8 text-sm text-gray-600">
+                Login successful — redirecting... 
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
               </div>
             ) : (
               <form onSubmit={handleLogin} className="space-y-5">
