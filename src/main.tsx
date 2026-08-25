@@ -14,6 +14,7 @@ import BookRegister from "./admin/Routes/sub-route/Book/BookRegister";
 
 import EventsPage from "./public-client/Routes/EventPage";
 import ClientHomePage from "./public-client/Routes/Homepage";
+import CatalogPage from "./public-client/Routes/CatalogPage";
 
 import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/500.css";
@@ -29,6 +30,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/home" element={<ClientHomePage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/catalog" element={<CatalogPage />} />
 
         {/* ========== ADMIN ROUTES (with sidebar) ========== */}
         <Route element={<Layout />}>

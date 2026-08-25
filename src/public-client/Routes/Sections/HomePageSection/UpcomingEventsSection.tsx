@@ -1,5 +1,5 @@
 // src/components/homepage/UpcomingEventsSection.tsx
-import CalendarIcon2 from "../../assets/calendar-2.png";
+import CalendarIcon2 from "../../../assets/calendar-2.png";
 
 const upcomingEvents = [
   { date: "28", month: "MAR", day: "Saturday", title: "Storytime with Ate Maria", time: "10:00 AM – 11:30 AM", location: "Children’s Hall", color: "from-pink-500 to-rose-500" },

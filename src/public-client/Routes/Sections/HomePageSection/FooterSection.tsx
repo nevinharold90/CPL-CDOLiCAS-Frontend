@@ -1,11 +1,11 @@
 import React from 'react';
-import Logo from "../../assets/logo.png";
-import PhoneIcon from "../../assets/phone.png";
-import EmailIcon from "../../assets/email.png"
-import LocationIcon from "../../assets/gps.png";
-import ClockIcon from "../../assets/clock.png";
-import FacebookIcon from "../../assets/facebook.png";
-import MapIcon from "../../assets/google-maps.png"
+import Logo from "../../../assets/logo.png";
+import PhoneIcon from "../../../assets/phone.png";
+import EmailIcon from "../../../assets/email.png"
+import LocationIcon from "../../../assets/gps.png";
+import ClockIcon from "../../../assets/clock.png";
+import FacebookIcon from "../../../assets/facebook.png";
+import MapIcon from "../../../assets/google-maps.png"
 
 const FooterSection = () => {
   return (

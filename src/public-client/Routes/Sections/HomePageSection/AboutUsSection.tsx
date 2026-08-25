@@ -1,6 +1,6 @@
 // src/components/Sections/AboutUsSection.tsx
-import CplFam from "../../assets/cpl-fam.png";
-import Book from "../../assets/books.png";
+import CplFam from "../../../assets/cpl-fam.png";
+import Book from "../../../assets/books.png";
 
 interface AboutUsSectionProps {
   onOpenStory?: () => void;

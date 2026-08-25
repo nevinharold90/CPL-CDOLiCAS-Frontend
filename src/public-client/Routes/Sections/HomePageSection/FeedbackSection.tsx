@@ -1,6 +1,6 @@
 // src/components/FeedbackSection.tsx
 import React, { useState } from 'react';
-import StarIcon from "../../assets/star.png";
+import StarIcon from "../../../assets/star.png";
 
 interface FeedbackSectionProps {
   onFeedbackSubmit: (rating: number, message: string) => void;

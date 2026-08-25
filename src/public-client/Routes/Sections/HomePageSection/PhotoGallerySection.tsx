@@ -1,6 +1,6 @@
 // src/components/homepage/PhotoGallerySection.tsx
-import CplFam from "../../assets/cpl-fam.png";
-import SearchIcon from "../../assets/search.png";
+import CplFam from "../../../assets/cpl-fam.png";
+import SearchIcon from "../../../assets/search.png";
 
 const galleryImages = [
   CplFam,

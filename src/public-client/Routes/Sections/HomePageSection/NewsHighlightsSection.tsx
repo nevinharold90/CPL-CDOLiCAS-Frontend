@@ -1,6 +1,6 @@
 // src/components/homepage/NewsHighlightsSection.tsx
 import { useState, useEffect } from "react";
-import CplFam from "../../assets/cpl-fam.png";
+import CplFam from "../../../assets/cpl-fam.png";
 
 const newsHighlights = [
   { image: CplFam, category: "HIGHLIGHT", title: "Community Reading Day", desc: "Hundreds of families gathered for our monthly storytelling session." },

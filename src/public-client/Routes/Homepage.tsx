@@ -2,16 +2,16 @@
 import { useState, lazy, useEffect, useRef } from "react";
 
 // Lazy imports
-const AboutUsSection = lazy(() => import("./Sections/AboutUsSection"));
-const NewsHighlightsSection = lazy(() => import("./Sections/NewsHighlightsSection"));
-const UpcomingEventsSection = lazy(() => import("./Sections/UpcomingEventsSection"));
-const KnowdledgeCornerSection = lazy(() => import("./Sections/KnowdledgeCornerSection"));
-const PhotoGallerySection = lazy(() => import("./Sections/PhotoGallerySection"));
-const RunningTestimonialSection = lazy(() => import("./Sections/RunningTestimonialSection"));
-const FeedbackSection = lazy(() => import("./Sections/FeedbackSection"));
-const FooterSection = lazy(() => import("./Sections/FooterSection"));
+const AboutUsSection = lazy(() => import("./Sections/HomePageSection/AboutUsSection"));
+const NewsHighlightsSection = lazy(() => import("./Sections/HomePageSection/NewsHighlightsSection"));
+const UpcomingEventsSection = lazy(() => import("./Sections/HomePageSection/UpcomingEventsSection"));
+const KnowdledgeCornerSection = lazy(() => import("./Sections/HomePageSection/KnowdledgeCornerSection"));
+const PhotoGallerySection = lazy(() => import("./Sections/HomePageSection/PhotoGallerySection"));
+const RunningTestimonialSection = lazy(() => import("./Sections/HomePageSection/RunningTestimonialSection"));
+const FeedbackSection = lazy(() => import("./Sections/HomePageSection/FeedbackSection"));
+const FooterSection = lazy(() => import("./Sections/HomePageSection/FooterSection"));
 
-import HeroSection from "./Sections/HeroSection";
+import HeroSection from "./Sections/HomePageSection/HeroSection";
 import ImageModal from "../components/Modals/ImageModal";
 import ContactModal from "../components/Modals/ContactModal";
 import FeedbackModal from "../components/Modals/FeedbackModal";
