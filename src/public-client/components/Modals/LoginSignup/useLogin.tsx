@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import api from '../../_api/axios';
-import { useCheckSession } from "../../utils/ActiveStatusChecker";
+import api from '../../../../_api/axios';
+import { useCheckSession } from "../../../../utils/ActiveStatusChecker";
 
 
 export interface User {

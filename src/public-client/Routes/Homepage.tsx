@@ -20,7 +20,7 @@ import FloatingFeedbackButton from "../components/FloatingFeedbackButton";
 import LazySection from "../components/LazySection";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import Navbar from "../components/Navbar";
-import LoginModal from "../components/Modals/LoginModal";
+import LoginModal from "../components/Modals/LoginSignupModal";
 
 import api from "../../_api/axios"; // 👈 This is the centralized call for Axios
 

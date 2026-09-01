@@ -190,7 +190,8 @@ const handleLogout = async () => {
                   className="flex items-center gap-2 text-sm font-semibold text-[#025aa7] bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer border border-blue-100"
                 >
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span>Welcome, {user?.first_name || user?.username || "User"}</span>
+                  {/* <span>Welcome, {user?.first_name || "User"}</span> */}
+                  <span>Welcome, {user?.first_name || "User"}</span>
                   <svg 
                     className={`w-4 h-4 text-[#025aa7] transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
                     fill="none" 
