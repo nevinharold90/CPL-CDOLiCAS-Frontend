@@ -9,14 +9,13 @@ export interface SignupPayload {
   username: string;
   email: string;
   password: string;
-  role: string;
   sex?: string;
   c_number?: string;
   is_gov_employee?: boolean;
   employee_id_no?: string;
   organization_office?: string;
   office_address?: string;
-  address?: string;
+  address?: string; // Renamed from home_address to match user_credentials table
 }
 
 interface SignupResponse {
@@ -27,8 +26,6 @@ interface SignupResponse {
     username: string;
     email: string;
     role: string;
-    first_name?: string;
-    last_name?: string;
   };
 }
 
@@ -43,7 +40,6 @@ const initialFormState: SignupPayload = {
   username: '',
   email: '',
   password: '',
-  role: 'Client',
   sex: '',
   c_number: '',
   is_gov_employee: false,
@@ -87,23 +83,14 @@ export function useSignup(options: UseSignupOptions = {}) {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    // 1. Log outgoing React form payload before API call
-    console.log('📤 Submitting Form Payload to Backend:', form);
-
     try {
       const response = await api.post<SignupResponse>('/user/register/client', form);
-
-      // 2. Log full successful backend response
-      console.log('✅ Signup Success Response:', response.data);
 
       setSuccessMessage(response.data.message || 'Account created successfully!');
       resetForm();
       onSuccess?.();
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        // 3. Log error response details if backend returns validation errors
-        console.error('❌ Signup Error Response:', error.response?.data);
-
         if (error.response) {
           setErrorMessage(error.response.data?.message || 'Signup failed. Please check your details.');
         } else if (error.request) {
@@ -112,7 +99,6 @@ export function useSignup(options: UseSignupOptions = {}) {
           setErrorMessage('An unexpected error occurred.');
         }
       } else {
-        console.error('❌ Unexpected Error:', error);
         setErrorMessage('An unexpected error occurred.');
       }
     } finally {

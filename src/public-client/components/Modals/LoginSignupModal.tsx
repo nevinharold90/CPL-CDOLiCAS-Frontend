@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useLogin } from './LoginSignup/useLogin';
 import { useSignup } from './LoginSignup/useSignup';
 import { Loader2, CheckCircle2 } from 'lucide-react';
+
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -264,8 +265,8 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                           className={`${inputClass} text-gray-700`}
                         >
                           <option value="">Sex (Optional)</option>
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
                         </select>
                       </div>
 
@@ -320,7 +321,7 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                             type="text"
                             value={form.office_address || ''}
                             onChange={(e) => updateField('office_address', e.target.value)}
-                            placeholder="Office Address"
+                            placeholder="Organization/Office Address *"
                             disabled={signupLoading}
                             className={inputClass}
                           />
