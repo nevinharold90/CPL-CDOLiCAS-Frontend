@@ -108,7 +108,6 @@ const handleLogout = async () => {
   };
 
   return (
-
     <>
       {loggingOut && (
         <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-center">
@@ -205,31 +204,34 @@ const handleLogout = async () => {
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="px-4 py-2 border-b border-gray-100">
+                    {/* <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-xs text-gray-400 font-medium">Signed in as</p>
                       <p className="text-sm font-semibold text-gray-800 truncate">{user?.email}</p>
-                    </div>
-
+                    </div> */}
+                    {/* Render Dashboard button only for admin or superadmin */}
+                    {['admin', 'superadmin'].includes(user?.role?.toLowerCase() ?? '') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/dashboard");
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#025aa7] transition-colors duration-150 font-medium cursor-pointer"
+                      >
+                        Admin Dashboard
+                      </button>
+                    )}
                     <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/dashboard");
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#025aa7] transition-colors duration-150 font-medium"
-                    >
-                      Dashboard
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/profile");
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#025aa7] transition-colors duration-150 font-medium"
-                    >
-                      Profile Settings
-                    </button>
-
+                        type="button"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/Account/Profile");
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#025aa7] transition-colors duration-150 font-medium cursor-pointer"
+                      >
+                        Profile
+                      </button>
+                  
                     <div className="border-t border-gray-100 my-1"></div>
 
                     <button

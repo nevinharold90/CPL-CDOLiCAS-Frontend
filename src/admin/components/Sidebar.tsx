@@ -59,16 +59,32 @@ interface MenuType {
 }
 
 const Sidebar = ({ open, setOpen }: SidebarProps) => {
+  
+  
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
   const [loading, setLoading] = useState(false);
-
+  
   const [subMenus, setSubMenus] = useState<{ [key in SubMenuKey]: boolean }>({
     inbox: false,
     settings: false,
   });
+  
+  const [user, setUser] = useState<any>(null);
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await api.get("/user/me");
+        setUser(response.data);
+      } catch (error) {
+        console.error("Failed to fetch user in Sidebar:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
 // const sessionStatus = useCheckSession(); // Invoked here  
 
@@ -119,6 +135,16 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
     top: "0px",
     opacity: 0,
   });
+
+  // Keep drawers open if current route matches parent path or subMenu paths
+  useEffect(() => {
+    if (currentPath.startsWith("/book-list")) {
+      setSubMenus((prev) => ({ ...prev, inbox: true }));
+    }
+    if (currentPath.startsWith("/settings")) {
+      setSubMenus((prev) => ({ ...prev, settings: true }));
+    }
+  }, [currentPath]);
 
   const menuRefs = useRef<(HTMLLIElement | null)[]>([]);
   const logoutRef = useRef<HTMLButtonElement>(null);
@@ -193,6 +219,8 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
     window.addEventListener("resize", updatePosition);
     return () => window.removeEventListener("resize", updatePosition);
   }, [hoveredIndex, Menus.length]);
+
+  console.log("User logged test:", user);
 
   return (
     <>
@@ -290,17 +318,14 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
                 <div
                   className="flex items-center justify-between gap-x-3 px-3 py-2.5 rounded-lg transition-colors duration-200 cursor-pointer"
                   onClick={() => {
-                    // Sidebar minimized → only navigate
-                    if (!open) {
-                      if (menu.path) navigate(menu.path);
-                      return;
+                    // 1. Always navigate to the menu route if it exists
+                    if (menu.path) {
+                      navigate(menu.path);
                     }
 
-                    // Sidebar expanded
-                    if (menu.key) {
+                    // 2. If sidebar is open and has a subMenu key, toggle the drawer
+                    if (open && menu.key) {
                       toggleSubMenu(menu.key);
-                    } else if (menu.path) {
-                      navigate(menu.path);
                     }
                   }}
                 >
