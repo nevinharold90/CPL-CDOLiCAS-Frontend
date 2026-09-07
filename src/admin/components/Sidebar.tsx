@@ -35,7 +35,7 @@ import {
   TbLayoutSidebarLeftExpand,
 } from "react-icons/tb";
 
-type SubMenuKey = "inbox" | "settings";
+type SubMenuKey = "settings";
 
 interface SidebarProps {
   open: boolean;
@@ -67,7 +67,6 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
   const [loading, setLoading] = useState(false);
   
   const [subMenus, setSubMenus] = useState<{ [key in SubMenuKey]: boolean }>({
-    inbox: false,
     settings: false,
   });
   
@@ -123,7 +122,7 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
   // Collapse all submenus whenever sidebar is minimized
   useEffect(() => {
     if (!open) {
-      setSubMenus({ inbox: false, settings: false });
+      setSubMenus({ settings: false });
     }
   }, [open]);
 
@@ -138,9 +137,6 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
 
   // Keep drawers open if current route matches parent path or subMenu paths
   useEffect(() => {
-    if (currentPath.startsWith("/book-list")) {
-      setSubMenus((prev) => ({ ...prev, inbox: true }));
-    }
     if (currentPath.startsWith("/settings")) {
       setSubMenus((prev) => ({ ...prev, settings: true }));
     }
@@ -171,8 +167,6 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
       iconNormal: BookListIcon,
       iconActive: BookListActiveIcon,
       path: "/book-list",
-      key: "inbox",
-      subMenu: [{ title: "Register Book", path: "/book-list/book-registration" }],
     },
     {
       title: "Members",

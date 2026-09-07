@@ -32,6 +32,9 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/login" element={<Login />} />
         <Route path="/catalog" element={<CatalogPage />} />
 
+        {/* ========== STANDALONE ADMIN PAGES (no sidebar, own tab) ========== */}
+        <Route path="/book-list/book-registration" element={<BookRegister />} />
+
         {/* ========== ADMIN ROUTES (with sidebar) ========== */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -39,7 +42,6 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/members" element={<Members />} />
           <Route path="/book-list" element={<BookList />} />
-          <Route path="/book-list/book-registration" element={<BookRegister />} />
         </Route>
 
       </Routes>

@@ -9,8 +9,6 @@ import PrintIcon from "../assets/print.png";
 import BackIcon from "../assets/back.png";
 import CalendarIcon from "../assets/calendar.png";
 
-import { useNavigate } from 'react-router-dom';
-
 type Book = {
   id: string;
   code: string;
@@ -61,8 +59,6 @@ function BookList() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-
-  const navigate = useNavigate();
 
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
 
@@ -144,7 +140,8 @@ function BookList() {
 
   const handleRegisterBook = () => {
     console.log("Registering book.");
-    navigate('/book-list/book-registration'); // Navigate to the book registration page
+    // Open the registration page in a new tab instead of navigating away
+    window.open("/book-list/book-registration", "_blank", "noopener,noreferrer");
   };
 
   const startBarcodeGeneration = () => {
