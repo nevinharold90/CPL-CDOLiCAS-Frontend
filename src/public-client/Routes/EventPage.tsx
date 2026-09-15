@@ -66,14 +66,7 @@ const EventsPage = () => {
   // Prevent background scrolling when any modal is open
   useEffect(() => {
     const isAnyModalOpen = isOurStoryOpen || isContactOpen;
-
-    if (isAnyModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'visible';
-    }
-
-    // Cleanup when component unmounts
+    document.body.style.overflow = isAnyModalOpen ? 'hidden' : 'visible';
     return () => {
       document.body.style.overflow = 'visible';
     };

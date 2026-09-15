@@ -2,7 +2,20 @@
 import { useState } from 'react';
 import { useLogin } from './LoginSignup/useLogin';
 import { useSignup } from './LoginSignup/useSignup';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { 
+  Loader2, 
+  CheckCircle2, 
+  User, 
+  Lock, 
+  Mail, 
+  Phone, 
+  Building2, 
+  MapPin, 
+  Briefcase, 
+  CreditCard,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -13,7 +26,7 @@ interface LoginModalProps {
 type AuthTab = 'login' | 'signup';
 
 const inputClass =
-  "w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#025aa7] focus:ring-1 focus:ring-[#025aa7]/20 transition-colors disabled:opacity-50";
+  "w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#025aa7] focus:ring-2 focus:ring-[#025aa7]/10 transition-all disabled:opacity-50";
 
 function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   // 1. Declare ALL useState hooks at the top
@@ -22,6 +35,7 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [signupStep, setSignupStep] = useState<1 | 2>(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [customError, setCustomError] = useState<string | null>(null);
 
   // 2. Declare custom hooks unconditionally
   const {
@@ -52,61 +66,120 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const handleClose = () => {
     setActiveTab('login');
     setSignupStep(1);
+    setCustomError(null);
     onClose();
+  };
+
+  // Validation interceptor for Step 2 (Gmail & Contact number rules)
+  const handleSignupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCustomError(null);
+
+    // Strict Gmail validation check
+    const emailVal = form.email?.trim().toLowerCase() || '';
+    if (!emailVal.endsWith('@gmail.com') || emailVal === '@gmail.com') {
+      setCustomError('Please enter a valid Gmail address ending strictly with @gmail.com');
+      return;
+    }
+
+    // Strict Contact Number check (if provided, must be digits/symbols and at least 7-11 chars)
+    const phoneVal = form.c_number?.trim() || '';
+    if (phoneVal) {
+      const phoneRegex = /^[+]?[\d\s-]{7,15}$/;
+      if (!phoneRegex.test(phoneVal)) {
+        setCustomError('Please enter a valid contact number format.');
+        return;
+      }
+    }
+
+    handleSignup(e);
   };
 
   // 4. Early return MUST be after all hook declarations
   if (!isOpen) return null;
-  
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
       onClick={handleClose}
     >
       <div
-        className={`w-full ${activeTab === 'signup' ? 'max-w-2xl' : 'max-w-md'} bg-white rounded-2xl shadow-2xl p-10 relative transition-all duration-300`}
+        className={`w-full ${activeTab === 'signup' ? 'max-w-2xl' : 'max-w-md'} bg-white rounded-3xl shadow-2xl p-8 sm:p-10 relative transition-all duration-300 overflow-hidden border border-gray-100`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Top Decorative Gradient Line */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#025aa7] to-blue-400" />
+
+        {/* Clear, elevated Close Button positioned completely away from content */}
         <button
           onClick={handleClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 text-sm"
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer z-20 shadow-sm"
         >
           ✕
         </button>
 
+        {/* Tab Switcher Pills */}
+        <div className="flex bg-gray-100/80 p-1 rounded-2xl mb-8 mt-2">
+          <button
+            type="button"
+            onClick={() => { setActiveTab('login'); setSignupStep(1); setCustomError(null); }}
+            className={`flex-1 py-2.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+              activeTab === 'login'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('signup'); setCustomError(null); }}
+            className={`flex-1 py-2.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+              activeTab === 'signup'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            Create Account
+          </button>
+        </div>
+
         {/* LOGIN */}
         {activeTab === 'login' && (
-          <>
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">Login</h2>
-              <p className="text-sm text-gray-500 mt-1.5">Enter your credentials to continue.</p>
+          <div className="animate-in fade-in duration-300">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900">Welcome Back</h2>
+              <p className="text-sm text-gray-500 mt-1">Please enter your login details to proceed.</p>
             </div>
 
             {loginError && (
-              <div className="mb-5 p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg">
-                {loginError}
+              <div className="mb-5 p-3.5 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl flex items-center gap-2">
+                <span>{loginError}</span>
               </div>
             )}
 
             {isRedirecting ? (
-              <div className="flex items-center justify-center py-8 text-sm text-gray-600">
-                Login successful — redirecting... 
-                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <div className="flex flex-col items-center justify-center py-10 gap-3 text-sm text-gray-600">
+                <Loader2 className="h-8 w-8 animate-spin text-[#025aa7]" />
+                <span>Login successful — redirecting...</span>
               </div>
             ) : (
-              <form onSubmit={handleLogin} className="space-y-5">
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Username or Email"
-                  disabled={loginLoading}
-                  required
-                  className={inputClass}
-                />
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Username or Email"
+                    disabled={loginLoading}
+                    required
+                    className={inputClass}
+                  />
+                </div>
 
                 <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
@@ -114,89 +187,81 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                     placeholder="Password"
                     disabled={loginLoading}
                     required
-                    className={`${inputClass} pr-14`}
+                    className={`${inputClass} pr-12`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? 'Hide' : 'Show'}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loginLoading}
-                  className="w-full py-3 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-medium rounded-lg disabled:opacity-60 transition-colors"
+                  className="w-full py-3.5 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-semibold rounded-xl shadow-lg shadow-[#025aa7]/20 disabled:opacity-60 transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
                 >
-                  {loginLoading ? 'Signing in...' : 'Sign In'}
+                  {loginLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
                 </button>
               </form>
             )}
-
-            <p className="text-center text-sm text-gray-500 mt-8">
-              Don't have an account?{' '}
-              <button
-                type="button"
-                onClick={() => setActiveTab('signup')}
-                className="text-[#025aa7] font-semibold hover:underline cursor-pointer"
-              >
-                Sign Up
-              </button>
-            </p>
-          </>
+          </div>
         )}
+
         {/* SIGNUP TAB */}
         {activeTab === 'signup' && (
-          <>
+          <div className="animate-in fade-in duration-300">
             {signupSuccess ? (
-              /* --- SUCCESS ANIMATION VIEW --- */
-              <div className="flex flex-col items-center justify-center py-8 text-center animate-in fade-in zoom-in duration-300">
-                {/* Animated Icon Badge */}
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
-                  <CheckCircle2 className="w-10 h-10" />
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-emerald-100">
+                  <CheckCircle2 className="w-8 h-8" />
                 </div>
-
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">You're All Set!</h2>
                 <p className="text-sm text-gray-600 max-w-xs mb-6">
                   {signupSuccess}
                 </p>
-
                 <button
                   type="button"
                   onClick={() => {
                     setActiveTab('login');
                     setSignupStep(1);
                   }}
-                  className="w-full py-3 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+                  className="w-full py-3.5 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer shadow-lg shadow-[#025aa7]/20"
                 >
                   Proceed to Login
                 </button>
               </div>
             ) : (
-              /* --- REGISTRATION FORM VIEW --- */
               <>
                 <div className="mb-6 flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {signupStep === 1 ? 'Personal Details' : 'Create Account'}
+                    <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+                      {signupStep === 1 ? 'Personal Details' : 'Account Credentials'}
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {signupStep === 1 ? 'Step 1 of 2: Basic details' : 'Step 2 of 2: Set up your login'}
+                    <p className="text-xs font-medium text-gray-400 mt-1 uppercase tracking-wider">
+                      {signupStep === 1 ? 'Step 1 of 2: Basic Info' : 'Step 2 of 2: Security'}
                     </p>
                   </div>
 
-                  {/* Progress Indicator */}
-                  <div className="flex items-center gap-1.5">
-                    <span className={`h-2.5 w-2.5 rounded-full ${signupStep === 1 ? 'bg-[#025aa7]' : 'bg-gray-200'}`} />
-                    <span className={`h-2.5 w-2.5 rounded-full ${signupStep === 2 ? 'bg-[#025aa7]' : 'bg-gray-200'}`} />
+                  {/* Visual Stepper Dots */}
+                  <div className="flex items-center gap-1.5 bg-gray-50 p-1.5 rounded-full border border-gray-100">
+                    <span className={`h-2 rounded-full transition-all ${signupStep === 1 ? 'w-6 bg-[#025aa7]' : 'w-2 bg-gray-300'}`} />
+                    <span className={`h-2 rounded-full transition-all ${signupStep === 2 ? 'w-6 bg-[#025aa7]' : 'w-2 bg-gray-300'}`} />
                   </div>
                 </div>
 
-                {signupError && (
-                  <div className="mb-5 p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg">
-                    {signupError}
+                {(signupError || customError) && (
+                  <div className="mb-5 p-3.5 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl">
+                    {signupError || customError}
                   </div>
                 )}
 
@@ -204,94 +269,119 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (signupStep === 1) {
+                      setCustomError(null);
+                      // Validate contact number format in step 1 if entered
+                      const phoneVal = form.c_number?.trim() || '';
+                      if (phoneVal) {
+                        const phoneRegex = /^[+]?[\d\s-]{7,15}$/;
+                        if (!phoneRegex.test(phoneVal)) {
+                          setCustomError('Please enter a valid contact number format.');
+                          return;
+                        }
+                      }
+
                       setIsTransitioning(true);
                       setTimeout(() => {
                         setIsTransitioning(false);
                         setSignupStep(2);
-                      }, 1000); // 1-second delay
+                      }, 800);
                     } else {
-                      handleSignup(e);
+                      handleSignupSubmit(e);
                     }
                   }}
-                  className="space-y-5"
+                  className="space-y-4"
                 >
-                  {/* STEP 1: Personal & Work Credentials */}
+                  {/* STEP 1 */}
                   {signupStep === 1 && (
-                    <>
-                      {/* Name Row */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                        <input
-                          type="text"
-                          value={form.first_name || ''}
-                          onChange={(e) => updateField('first_name', e.target.value)}
-                          placeholder="First Name *"
-                          disabled={signupLoading}
-                          required
-                          className={inputClass}
-                        />
-                        <input
-                          type="text"
-                          value={form.middle_name || ''}
-                          onChange={(e) => updateField('middle_name', e.target.value)}
-                          placeholder="Middle Name"
-                          disabled={signupLoading}
-                          className={inputClass}
-                        />
-                        <input
-                          type="text"
-                          value={form.last_name || ''}
-                          onChange={(e) => updateField('last_name', e.target.value)}
-                          placeholder="Last Name *"
-                          disabled={signupLoading}
-                          required
-                          className={inputClass}
-                        />
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="relative">
+                          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={form.first_name || ''}
+                            onChange={(e) => updateField('first_name', e.target.value)}
+                            placeholder="First Name *"
+                            disabled={signupLoading}
+                            required
+                            className={inputClass}
+                          />
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={form.middle_name || ''}
+                            onChange={(e) => updateField('middle_name', e.target.value)}
+                            placeholder="Middle Name"
+                            disabled={signupLoading}
+                            className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#025aa7] transition-all"
+                          />
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={form.last_name || ''}
+                            onChange={(e) => updateField('last_name', e.target.value)}
+                            placeholder="Last Name *"
+                            disabled={signupLoading}
+                            required
+                            className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#025aa7] transition-all"
+                          />
+                        </div>
                       </div>
 
-                      {/* Contact & Gender */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <input
-                          type="tel"
-                          value={form.c_number || ''}
-                          onChange={(e) => updateField('c_number', e.target.value)}
-                          placeholder="Contact Number"
-                          disabled={signupLoading}
-                          className={inputClass}
-                        />
-                        <select
-                          value={form.sex || ''}
-                          onChange={(e) => updateField('sex', e.target.value)}
-                          disabled={signupLoading}
-                          className={`${inputClass} text-gray-700`}
-                        >
-                          <option value="">Sex (Optional)</option>
-                          <option value="male">Male</option>
-                          <option value="female">Female</option>
-                        </select>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="relative">
+                          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="tel"
+                            value={form.c_number || ''}
+                            onChange={(e) => updateField('c_number', e.target.value)}
+                            placeholder="Contact Number"
+                            disabled={signupLoading}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div className="relative">
+                          <select
+                            value={form.sex || ''}
+                            onChange={(e) => updateField('sex', e.target.value)}
+                            disabled={signupLoading}
+                            className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:bg-white focus:border-[#025aa7] transition-all cursor-pointer"
+                          >
+                            <option value="">Sex (Optional)</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                          </select>
+                        </div>
                       </div>
 
-                      {/* Home Address & Organization */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <input
-                          type="text"
-                          value={form.organization_office || ''}
-                          onChange={(e) => updateField('organization_office', e.target.value)}
-                          placeholder="Organization / Office Name"
-                          disabled={signupLoading}
-                          className={inputClass}
-                        />
-                        <input
-                          type="text"
-                          value={form.address || ''}
-                          onChange={(e) => updateField('address', e.target.value)}
-                          placeholder="Home Address"
-                          disabled={signupLoading}
-                          className={inputClass}
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="relative">
+                          <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={form.organization_office || ''}
+                            onChange={(e) => updateField('organization_office', e.target.value)}
+                            placeholder="Organization / Office (Optional)"
+                            disabled={signupLoading}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div className="relative">
+                          <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={form.address || ''}
+                            onChange={(e) => updateField('address', e.target.value)}
+                            placeholder="Home Address"
+                            disabled={signupLoading}
+                            className={inputClass}
+                          />
+                        </div>
                       </div>
 
-                      {/* Checkbox: Government Employee */}
-                      <div className="flex items-center gap-3 pt-2">
+                      <div className="flex items-center gap-3 p-3.5 bg-gray-50/80 rounded-xl border border-gray-100">
                         <input
                           type="checkbox"
                           id="is_gov_employee"
@@ -300,37 +390,43 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                           disabled={signupLoading}
                           className="w-4 h-4 text-[#025aa7] rounded border-gray-300 focus:ring-[#025aa7] cursor-pointer"
                         />
-                        <label htmlFor="is_gov_employee" className="text-sm text-gray-700 cursor-pointer font-medium select-none">
+                        <label htmlFor="is_gov_employee" className="text-xs font-medium text-gray-700 cursor-pointer select-none">
                           Are you a government employee?
                         </label>
                       </div>
 
-                      {/* Conditional Fields for Government Employees */}
                       {form.is_gov_employee && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-4 bg-gray-50 border border-gray-200 rounded-xl transition-all">
-                          <input
-                            type="text"
-                            value={form.employee_id_no || ''}
-                            onChange={(e) => updateField('employee_id_no', e.target.value)}
-                            placeholder="Employee ID No. *"
-                            disabled={signupLoading}
-                            required={form.is_gov_employee}
-                            className={inputClass}
-                          />
-                          <input
-                            type="text"
-                            value={form.office_address || ''}
-                            onChange={(e) => updateField('office_address', e.target.value)}
-                            placeholder="Organization/Office Address *"
-                            disabled={signupLoading}
-                            className={inputClass}
-                          />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-blue-50/40 border border-blue-100 rounded-2xl transition-all">
+                          <div className="relative">
+                            <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                              type="text"
+                              value={form.employee_id_no || ''}
+                              onChange={(e) => updateField('employee_id_no', e.target.value)}
+                              placeholder="Employee ID No. *"
+                              disabled={signupLoading}
+                              required={form.is_gov_employee}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div className="relative">
+                            <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                              type="text"
+                              value={form.office_address || ''}
+                              onChange={(e) => updateField('office_address', e.target.value)}
+                              placeholder="Office Address *"
+                              disabled={signupLoading}
+                              className={inputClass}
+                            />
+                          </div>
                         </div>
                       )}
+
                       <button
                         type="submit"
                         disabled={isTransitioning}
-                        className="w-full py-3 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-medium rounded-lg disabled:opacity-60 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-3.5 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-semibold rounded-xl shadow-lg shadow-[#025aa7]/20 disabled:opacity-60 transition-all cursor-pointer flex items-center justify-center gap-2 mt-4"
                       >
                         {isTransitioning ? (
                           <>
@@ -338,36 +434,43 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                             <span>Loading...</span>
                           </>
                         ) : (
-                          'Next'
+                          'Next Step'
                         )}
                       </button>
-                    </>
+                    </div>
                   )}
 
-                  {/* STEP 2: Username, Email & Password */}
+                  {/* STEP 2 */}
                   {signupStep === 2 && (
-                    <>
-                      <input
-                        type="text"
-                        value={form.username || ''}
-                        onChange={(e) => updateField('username', e.target.value)}
-                        placeholder="Username *"
-                        disabled={signupLoading}
-                        required
-                        className={inputClass}
-                      />
-
-                      <input
-                        type="email"
-                        value={form.email || ''}
-                        onChange={(e) => updateField('email', e.target.value)}
-                        placeholder="Email Address *"
-                        disabled={signupLoading}
-                        required
-                        className={inputClass}
-                      />
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          value={form.username || ''}
+                          onChange={(e) => updateField('username', e.target.value)}
+                          placeholder="Username *"
+                          disabled={signupLoading}
+                          required
+                          className={inputClass}
+                        />
+                      </div>
 
                       <div className="relative">
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="email"
+                          value={form.email || ''}
+                          onChange={(e) => updateField('email', e.target.value)}
+                          placeholder="Gmail Address (e.g., name@gmail.com) *"
+                          disabled={signupLoading}
+                          required
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                           type={showSignupPassword ? 'text' : 'password'}
                           value={form.password || ''}
@@ -375,30 +478,30 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                           placeholder="Password *"
                           disabled={signupLoading}
                           required
-                          className={`${inputClass} pr-14`}
+                          className={`${inputClass} pr-12`}
                         />
                         <button
                           type="button"
                           onClick={() => setShowSignupPassword(!showSignupPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                         >
-                          {showSignupPassword ? 'Hide' : 'Show'}
+                          {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 pt-2">
                         <button
                           type="button"
-                          onClick={() => setSignupStep(1)}
+                          onClick={() => { setSignupStep(1); setCustomError(null); }}
                           disabled={signupLoading}
-                          className="w-1/3 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors cursor-pointer"
+                          className="w-1/3 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors cursor-pointer"
                         >
                           Back
                         </button>
                         <button
                           type="submit"
                           disabled={signupLoading}
-                          className="w-2/3 py-3 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-medium rounded-lg disabled:opacity-60 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                          className="w-2/3 py-3.5 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-semibold rounded-xl shadow-lg shadow-[#025aa7]/20 disabled:opacity-60 transition-all cursor-pointer flex items-center justify-center gap-2"
                         >
                           {signupLoading ? (
                             <>
@@ -410,30 +513,16 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                           )}
                         </button>
                       </div>
-                    </>
+                    </div>
                   )}
                 </form>
-
-                <p className="text-center text-sm text-gray-500 mt-8">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab('login');
-                      setSignupStep(1);
-                    }}
-                    className="text-[#025aa7] font-semibold hover:underline cursor-pointer"
-                  >
-                    Login
-                  </button>
-                </p>
               </>
             )}
-          </>
-        )}
           </div>
-        </div>
-      );
-    }
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default LoginModal;

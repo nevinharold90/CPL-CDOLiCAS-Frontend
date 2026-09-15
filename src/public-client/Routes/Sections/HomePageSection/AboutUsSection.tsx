@@ -28,14 +28,14 @@ const AboutUsSection = ({ onOpenStory }: AboutUsSectionProps) => {
             <div className="space-y-8 text-lg text-gray-600 leading-relaxed">
               <div>
                 <h3 className="text-[#025aa7] text-3xl font-semibold mb-4">Our Vision</h3>
-                <p className="text-xl leading-tight">
-                  To be the vibrant heart of Cagayan de Oro — a welcoming space where every mind is inspired, every story is heard, and lifelong learning lights the path to a brighter future for all.
+                <p>
+                  The Cagayan de Oro City Public Library envisions a future where every member of our community is informed, engaged, and inspired. We aspired to be the most trusted and dynamic hub of knowdledge and cultural exchange, actively shaping a resilient and thriving community for generations to come.
                 </p>
               </div>
               <div>
                 <h3 className="text-[#025aa7] text-3xl font-semibold mb-4">Our Mission</h3>
                 <p>
-                  We provide free and equitable access to books, information, and ideas that empower our community. We foster curiosity, preserve local heritage, ignite imagination through stories and programs, and build connections that strengthen the social and cultural fabric of Cagayan de Oro.
+                  The mission of the City Public Library is to enrich, educate, and empower our diverse community by providing equitable access to resources, fostering lifelong learning, and serving as a welcoming, essential center for connection, information, and creativity.
                 </p>
               </div>
             </div>
