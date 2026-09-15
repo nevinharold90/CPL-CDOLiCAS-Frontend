@@ -8,6 +8,7 @@ interface CatalogNavbarProps {
   onToggleBookmark: (id: string) => void;
   onOpenHistory?: () => void;
   isViewingHistory?: boolean;
+  onLogoClick?: () => void;
 }
 
 const CatalogNavbar = ({
@@ -16,6 +17,7 @@ const CatalogNavbar = ({
   onToggleBookmark,
   onOpenHistory,
   isViewingHistory = false,
+  onLogoClick,
 }: CatalogNavbarProps) => {
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
@@ -27,12 +29,16 @@ const CatalogNavbar = ({
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[#dce8f2] bg-white/95 backdrop-blur-sm">
+    <nav className="sticky top-0 z-50 border-b border-[#dce8f2] bg-white/95 backdrop-blur-sm font-['Poppins']">
       <div className="max-w-6xl mx-auto px-5 md:px-10 lg:px-16 h-16 flex items-center justify-between">
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer"
-          onClick={() => (window.location.href = "/")}
+          onClick={() => {
+            if (onLogoClick) {
+              onLogoClick();
+            }
+          }}
         >
           <div className="w-11 h-11 flex-shrink-0">
             <img
@@ -60,7 +66,7 @@ const CatalogNavbar = ({
               setShowBookmarks(false);
               setShowAccount(false);
             }}
-            className={`flex items-center gap-2 font-mono text-sm tracking-wider uppercase px-4 py-2.5 rounded-sm border transition-colors
+            className={`flex items-center gap-2 text-sm tracking-wider uppercase px-4 py-2.5 rounded-sm border transition-colors
               ${
                 isViewingHistory
                   ? "bg-[#025aa7] border-[#025aa7] text-white"
@@ -90,7 +96,7 @@ const CatalogNavbar = ({
                 setShowBookmarks((v) => !v);
                 setShowAccount(false);
               }}
-              className={`relative flex items-center gap-2 font-mono text-sm tracking-wider uppercase px-4 py-2.5 rounded-sm border transition-colors
+              className={`relative flex items-center gap-2 text-sm tracking-wider uppercase px-4 py-2.5 rounded-sm border transition-colors
                 ${
                   showBookmarks
                     ? "bg-[#025aa7] border-[#025aa7] text-white"
@@ -128,13 +134,13 @@ const CatalogNavbar = ({
             {showBookmarks && (
               <div className="absolute right-0 mt-2 w-80 rounded-sm border border-[#dce8f2] bg-white shadow-lg overflow-hidden z-50">
                 <div className="px-4 py-3 border-b border-[#eaf1f8] bg-[#f7fafd]">
-                  <span className="font-mono text-xs tracking-wider text-[#3f7fb3] uppercase">
+                  <span className="text-xs tracking-wider text-[#3f7fb3] uppercase">
                     Saved cards
                   </span>
                 </div>
                 {bookmarkedBooks.length === 0 ? (
                   <div className="px-5 py-8 text-center">
-                    <p className="font-mono text-sm text-gray-400">
+                    <p className="text-sm text-gray-400">
                       No bookmarked books yet
                     </p>
                   </div>
@@ -181,7 +187,7 @@ const CatalogNavbar = ({
                 setShowAccount((v) => !v);
                 setShowBookmarks(false);
               }}
-              className={`flex items-center gap-2.5 font-mono text-sm tracking-wider uppercase px-4 py-2.5 rounded-sm border transition-colors
+              className={`flex items-center gap-2.5 text-sm tracking-wider uppercase px-4 py-2.5 rounded-sm border transition-colors
                 ${
                   showAccount
                     ? "bg-[#025aa7] border-[#025aa7] text-white"
@@ -212,7 +218,7 @@ const CatalogNavbar = ({
                     {user.name}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">{user.email}</p>
-                  <span className="inline-block mt-2 font-mono text-xs tracking-wider uppercase px-2 py-1 rounded-sm bg-[#eaf1f8] text-[#3f7fb3]">
+                  <span className="inline-block mt-2 text-xs tracking-wider uppercase px-2 py-1 rounded-sm bg-[#eaf1f8] text-[#3f7fb3]">
                     {user.role}
                   </span>
                 </div>

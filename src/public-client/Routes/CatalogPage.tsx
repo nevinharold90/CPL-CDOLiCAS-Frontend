@@ -11,20 +11,36 @@ const CatalogPage = () => {
   const [query, setQuery] = useState("");
   const [searchScope, setSearchScope] = useState("catalog");
   const [activeRange, setActiveRange] = useState<string | null>(null);
-  
+
   const [bookmarkQuery, setBookmarkQuery] = useState("");
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(["1"]);
   const [currentPage, setCurrentPage] = useState(1);
   
+
   // Navigation & History State
   const [isViewingHistory, setIsViewingHistory] = useState(false);
   const [searchHistoryList, setSearchHistoryList] = useState<SearchHistoryItem[]>([
     { id: "1", date: "25/08/2026 13:18", search: "science", resultsCount: 760, type: "Catalog" },
     { id: "2", date: "25/08/2026 12:26", search: "technology", resultsCount: 420, type: "Catalog" },
   ]);
-  
+
   // Sort state matching the dropdown menu options
   const [sortBy, setSortBy] = useState("relevance");
+
+  // Bumped whenever the logo is clicked; forces CatalogResults to remount
+  // so its own internal state (e.g. advanced search view) resets too.
+  const [resetKey, setResetKey] = useState(0);
+
+  const handleLogoClick = () => {
+    setQuery("");
+    setSearchScope("catalog");
+    setActiveRange(null);
+    setBookmarkQuery("");
+    setCurrentPage(1);
+    setIsViewingHistory(false);
+    setSortBy("relevance");
+    setResetKey((k) => k + 1);
+  };
 
   const bookmarkedBooks = useMemo(
     () => PLACEHOLDER_BOOKS.filter((b) => bookmarkedIds.includes(b.id)),
@@ -100,9 +116,17 @@ const CatalogPage = () => {
       case "callnumber_za":
         return list.sort((a, b) => (b.callNumber || "").localeCompare(a.callNumber || ""));
       case "date_new_old":
-        return list.sort((a, b) => (b.year || 0) - (a.year || 0));
+        return list.sort(
+          (a, b) =>
+            ("year" in b && typeof b.year === "number" ? b.year : 0) -
+            ("year" in a && typeof a.year === "number" ? a.year : 0)
+        );
       case "date_old_new":
-        return list.sort((a, b) => (a.year || 0) - (b.year || 0));
+        return list.sort(
+          (a, b) =>
+            ("year" in a && typeof a.year === "number" ? a.year : 0) -
+            ("year" in b && typeof b.year === "number" ? b.year : 0)
+        );
       case "title_az":
         return list.sort((a, b) => a.title.localeCompare(b.title));
       case "title_za":
@@ -133,6 +157,7 @@ const CatalogPage = () => {
         onToggleBookmark={toggleBookmark}
         onOpenHistory={() => setIsViewingHistory(true)}
         isViewingHistory={isViewingHistory}
+        onLogoClick={handleLogoClick}
       />
 
       <CatalogHeader
@@ -154,6 +179,7 @@ const CatalogPage = () => {
       />
 
       <CatalogResults
+        key={resetKey}
         books={paginatedBooks}
         totalResultsCount={sortedAndDisplayedBooks.length}
         isSearching={isSearching}

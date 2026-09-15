@@ -1,5 +1,11 @@
 import { useState } from "react";
 import { Book } from "../../../hooks/type";
+import CatalogAdvancedSearch, {
+  AdvancedSearchQuery,
+} from "./Tabs/CatalogAdvancedSearch";
+import CatalogReservationList, {
+  ReservationItem,
+} from "./Tabs/Catalogreservationlist";
 
 export interface SearchHistoryItem {
   id: string;
@@ -35,9 +41,15 @@ interface CatalogResultsProps {
   onSelectHistorySearch?: (searchQuery: string) => void;
   onDeleteHistoryItems?: (ids: string[]) => void;
   onClearAllHistory?: () => void;
+  onAdvancedSearch?: (query: AdvancedSearchQuery) => void;
+  // Reservations (page-level list, not per-book)
+  reservations?: ReservationItem[];
+  onCancelReservations?: (ids: string[]) => void;
 }
 
 const LIST_VIEW_THRESHOLD = 6;
+// Widened container used across every results/sub-view in this page.
+const CONTAINER_WIDTH = "max-w-[1600px]";
 
 const StarRating = ({ rating }: { rating: number }) => (
   <div className="flex items-center gap-0.5" title={`${rating} out of 5`}>
@@ -78,10 +90,15 @@ const CatalogResults = ({
   onSelectHistorySearch,
   onDeleteHistoryItems,
   onClearAllHistory,
+  onAdvancedSearch,
+  reservations,
+  onCancelReservations,
 }: CatalogResultsProps) => {
   const [activeTab, setActiveTab] = useState<"Catalog" | "Authority">("Catalog");
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historyFilter, setHistoryFilter] = useState("");
+  const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
+  const [isReservationListOpen, setIsReservationListOpen] = useState(false);
 
   const useListView = books.length >= LIST_VIEW_THRESHOLD;
 
@@ -97,18 +114,23 @@ const CatalogResults = ({
     );
   };
 
+  const handleAdvancedSearch = (query: AdvancedSearchQuery) => {
+    if (onAdvancedSearch) onAdvancedSearch(query);
+    setIsAdvancedSearchOpen(false);
+  };
+
   // 1. Render Search History View
   if (isViewingHistory) {
     return (
-      <main className="flex-1 px-5 md:px-10 lg:px-16 py-8">
-        <div className="max-w-6xl mx-auto">
+      <main className="flex-1 px-5 md:px-10 lg:px-16 py-8 font-['Poppins']">
+        <div className={`${CONTAINER_WIDTH} mx-auto`}>
           <h1 className="text-2xl font-bold text-[#1f2a37] mb-4">Search history</h1>
 
           {/* Tabs */}
           <div className="flex border-b border-[#dce8f2] mb-6">
             <button
               onClick={() => setActiveTab("Catalog")}
-              className={`px-6 py-2.5 font-mono text-sm border-b-2 transition-colors ${
+              className={`px-6 py-2.5 text-sm border-b-2 transition-colors ${
                 activeTab === "Catalog"
                   ? "border-[#025aa7] text-[#025aa7] bg-white font-bold"
                   : "border-transparent text-gray-500 hover:text-[#1f2a37] bg-[#f7fafd]"
@@ -118,7 +140,7 @@ const CatalogResults = ({
             </button>
             <button
               onClick={() => setActiveTab("Authority")}
-              className={`px-6 py-2.5 font-mono text-sm border-b-2 transition-colors ${
+              className={`px-6 py-2.5 text-sm border-b-2 transition-colors ${
                 activeTab === "Authority"
                   ? "border-[#025aa7] text-[#025aa7] bg-white font-bold"
                   : "border-transparent text-gray-500 hover:text-[#1f2a37] bg-[#f7fafd]"
@@ -131,7 +153,7 @@ const CatalogResults = ({
           {/* Main Container */}
           <div className="border border-[#dce8f2] rounded-sm bg-white shadow-sm overflow-hidden">
             <div className="px-6 py-4 bg-[#f7fafd] border-b border-[#dce8f2]">
-              <h2 className="font-mono text-sm font-bold text-[#1f2a37] uppercase tracking-wider">
+              <h2 className="text-sm font-bold text-[#1f2a37] uppercase tracking-wider">
                 Current session
               </h2>
             </div>
@@ -141,7 +163,7 @@ const CatalogResults = ({
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setSelectedHistoryIds(filteredHistory.map((i) => i.id))}
-                  className="font-mono text-xs text-[#025aa7] hover:underline"
+                  className="text-xs text-[#025aa7] hover:underline"
                 >
                   Select all
                 </button>
@@ -151,19 +173,19 @@ const CatalogResults = ({
                     if (onClearAllHistory) onClearAllHistory();
                     setSelectedHistoryIds([]);
                   }}
-                  className="font-mono text-xs text-[#025aa7] hover:underline"
+                  className="text-xs text-[#025aa7] hover:underline"
                 >
                   Clear all
                 </button>
                 <span className="text-gray-300">|</span>
-                <span className="font-mono text-xs text-gray-600">Select searches to:</span>
+                <span className="text-xs text-gray-600">Select searches to:</span>
                 <button
                   onClick={() => {
                     if (onDeleteHistoryItems) onDeleteHistoryItems(selectedHistoryIds);
                     setSelectedHistoryIds([]);
                   }}
                   disabled={selectedHistoryIds.length === 0}
-                  className="font-mono text-xs text-[#b3402f] disabled:opacity-40 disabled:cursor-not-allowed hover:underline flex items-center gap-1 font-semibold"
+                  className="text-xs text-[#b3402f] disabled:opacity-40 disabled:cursor-not-allowed hover:underline flex items-center gap-1 font-semibold"
                 >
                   🗑 Delete
                 </button>
@@ -178,10 +200,10 @@ const CatalogResults = ({
                   value={historyFilter}
                   onChange={(e) => setHistoryFilter(e.target.value)}
                   placeholder="Search..."
-                  className="w-full px-3 py-1.5 text-sm font-mono text-[#1f2a37] bg-white border border-[#dce8f2] rounded-sm focus:outline-none focus:border-[#025aa7]"
+                  className="w-full px-3 py-1.5 text-sm text-[#1f2a37] bg-white border border-[#dce8f2] rounded-sm focus:outline-none focus:border-[#025aa7]"
                 />
               </div>
-              <div className="flex items-center gap-4 font-mono text-xs text-[#025aa7]">
+              <div className="flex items-center gap-4 text-xs text-[#025aa7]">
                 <button onClick={() => setHistoryFilter("")} className="hover:underline">✕ Clear filter</button>
                 <button className="hover:underline">🖹 CSV</button>
                 <button className="hover:underline">📋 Copy</button>
@@ -193,14 +215,14 @@ const CatalogResults = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#f7fafd] border-b border-[#dce8f2] font-mono text-xs text-gray-600 uppercase">
+                  <tr className="bg-[#f7fafd] border-b border-[#dce8f2] text-xs text-gray-600 uppercase">
                     <th className="py-3 px-4 w-12 text-center">ℹ</th>
                     <th className="py-3 px-4">Date ↕</th>
                     <th className="py-3 px-4">Search ↕</th>
                     <th className="py-3 px-4 text-right">Results ↕</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#eaf1f8] font-mono text-sm">
+                <tbody className="divide-y divide-[#eaf1f8] text-sm">
                   {filteredHistory.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="py-12 text-center text-gray-400">
@@ -224,7 +246,7 @@ const CatalogResults = ({
                             onClick={() => {
                               if (onSelectHistorySearch) onSelectHistorySearch(item.search);
                             }}
-                            className="text-[#025aa7] hover:underline flex items-center gap-1.5 text-left font-mono"
+                            className="text-[#025aa7] hover:underline flex items-center gap-1.5 text-left"
                           >
                             <span>📡</span> {item.search}
                           </button>
@@ -245,7 +267,7 @@ const CatalogResults = ({
                 setSelectedHistoryIds([]);
               }}
               disabled={selectedHistoryIds.length === 0}
-              className="px-4 py-2 bg-[#b3402f] text-white font-mono text-xs uppercase rounded-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#8a2e22] transition-colors shadow-sm"
+              className="px-4 py-2 bg-[#b3402f] text-white text-xs uppercase rounded-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#8a2e22] transition-colors shadow-sm"
             >
               Remove selected searches
             </button>
@@ -255,13 +277,42 @@ const CatalogResults = ({
     );
   }
 
+  // 1.5 Render Advanced Search View
+  if (isAdvancedSearchOpen) {
+    return (
+      <main className="flex-1 px-5 md:px-10 lg:px-16 py-12 font-['Poppins']">
+        <div className={`${CONTAINER_WIDTH} mx-auto`}>
+          <CatalogAdvancedSearch
+            onSearch={handleAdvancedSearch}
+            onBackToResults={() => setIsAdvancedSearchOpen(false)}
+          />
+        </div>
+      </main>
+    );
+  }
+
+  // 1.75 Render Reservation List View (separate view, same pattern as Advanced Search)
+  if (isReservationListOpen) {
+    return (
+      <main className="flex-1 px-5 md:px-10 lg:px-16 py-12 font-['Poppins']">
+        <div className={`${CONTAINER_WIDTH} mx-auto`}>
+          <CatalogReservationList
+            reservations={reservations}
+            onCancelReservations={onCancelReservations}
+            onBackToResults={() => setIsReservationListOpen(false)}
+          />
+        </div>
+      </main>
+    );
+  }
+
   // 2. Render Normal Catalog Results View with Full Book Details & Images
   return (
-    <main className="flex-1 px-5 md:px-10 lg:px-16 py-12">
-      <div className="max-w-6xl mx-auto">
+    <main className="flex-1 px-5 md:px-10 lg:px-16 py-12 font-['Poppins']">
+      <div className={`${CONTAINER_WIDTH} mx-auto`}>
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#dce8f2] pb-6">
           <div>
-            <p className="font-mono text-sm text-[#1f2a37] uppercase tracking-wider">
+            <p className="text-sm text-[#1f2a37] uppercase tracking-wider">
               {!isSearching ? (
                 <span className="text-[#025aa7] font-bold">
                   ★ Marked Books Collection ({totalResultsCount})
@@ -272,7 +323,7 @@ const CatalogResults = ({
                 </span>
               )}
             </p>
-            {useListView && <span className="font-mono text-xs text-[#3f7fb3] mt-1 block">· List view active</span>}
+            {useListView && <span className="text-xs text-[#3f7fb3] mt-1 block">· List view active</span>}
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -280,7 +331,7 @@ const CatalogResults = ({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm font-mono text-[#1f2a37] bg-white border border-[#dce8f2] rounded-sm focus:outline-none focus:border-[#025aa7] cursor-pointer appearance-none pr-10 truncate"
+                className="w-full px-4 py-2.5 text-sm text-[#1f2a37] bg-white border border-[#dce8f2] rounded-sm focus:outline-none focus:border-[#025aa7] cursor-pointer appearance-none pr-10 truncate"
               >
                 <option value="relevance">Relevance</option>
                 <optgroup label="Popularity">
@@ -313,21 +364,57 @@ const CatalogResults = ({
                   value={bookmarkQuery}
                   onChange={(e) => setBookmarkQuery(e.target.value)}
                   placeholder="Search marked books..."
-                  className="w-full px-4 py-2.5 text-sm font-mono text-[#1f2a37] bg-white border border-[#dce8f2] rounded-sm focus:outline-none focus:border-[#025aa7] placeholder:text-gray-400"
+                  className="w-full px-4 py-2.5 text-sm text-[#1f2a37] bg-white border border-[#dce8f2] rounded-sm focus:outline-none focus:border-[#025aa7] placeholder:text-gray-400"
                 />
               </div>
             )}
+
+            {/* Reserve button — opens the separate reservations list view */}
+            <button
+              type="button"
+              onClick={() => setIsReservationListOpen(true)}
+              title="View reservations"
+              className="flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 text-sm font-medium rounded-sm border border-[#dce8f2] text-[#025aa7] bg-white hover:bg-[#f7fafd] transition-colors shadow-sm"
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Reserve
+            </button>
+
+            {/* Advanced Search button */}
+            <button
+              type="button"
+              onClick={() => setIsAdvancedSearchOpen(true)}
+              className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-medium text-white bg-[#025aa7] border border-[#025aa7] rounded-sm hover:bg-[#02498c] transition-colors shadow-sm"
+            >
+              <svg
+                className="w-4 h-4 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10.5 3a7.5 7.5 0 015.916 12.096l4.244 4.244a1 1 0 01-1.414 1.414l-4.244-4.244A7.5 7.5 0 1110.5 3zm0 2a5.5 5.5 0 100 11 5.5 5.5 0 000-11z"
+                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h5M10.5 7.5v5" />
+              </svg>
+              Advanced Search
+            </button>
           </div>
         </div>
 
         {books.length === 0 ? (
           <div className="border border-dashed border-[#dce8f2] rounded-sm py-20 text-center">
-            <p className="font-mono text-base text-gray-400 uppercase tracking-wider">
+            <p className="text-base text-gray-400 uppercase tracking-wider">
               {!isSearching ? "No matching marked books found" : "No records found for this query"}
             </p>
           </div>
         ) : (
-          <div className={useListView ? "space-y-4" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"}>
+          <div className={useListView ? "space-y-4" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"}>
             {books.map((rawBook) => {
               const book = rawBook as ExtendedBook;
               const isBookmarked = bookmarkedIds.includes(book.id);
@@ -365,7 +452,7 @@ const CatalogResults = ({
                             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                           />
                         </svg>
-                        <span className="font-mono text-[10px] text-gray-400 uppercase tracking-tighter">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-tighter">
                           No Cover
                         </span>
                       </div>
@@ -390,7 +477,7 @@ const CatalogResults = ({
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         {book.callNumber && (
-                          <span className="font-mono text-xs text-[#3f7fb3] uppercase tracking-wider block mb-1">
+                          <span className="text-xs text-[#3f7fb3] uppercase tracking-wider block mb-1">
                             {book.callNumber}
                           </span>
                         )}
@@ -401,15 +488,15 @@ const CatalogResults = ({
                       </div>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-mono text-gray-500">
+                    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                       {book.year !== undefined && <span>Year: {book.year}</span>}
                       {book.rating !== undefined && <StarRating rating={book.rating} />}
                     </div>
 
                     {(book.availabilityStatus || book.available !== undefined) && (
-                      <div className="mt-3">
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <span
-                          className={`inline-block font-mono text-xs px-2 py-0.5 rounded-sm uppercase ${
+                          className={`inline-block text-xs px-2 py-0.5 rounded-sm uppercase ${
                             (book.availabilityStatus?.toLowerCase().includes("available") || book.available)
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                               : "bg-amber-50 text-amber-700 border border-amber-200"
@@ -428,7 +515,7 @@ const CatalogResults = ({
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-10 flex items-center justify-center gap-2 font-mono text-sm">
+          <div className="mt-10 flex items-center justify-center gap-2 text-sm">
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
