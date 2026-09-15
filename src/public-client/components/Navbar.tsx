@@ -8,11 +8,11 @@ import api from '../../_api/axios';
 const linkClass = `group relative inline-block text-gray-700 font-semibold text-[15px] tracking-wide transition-all duration-300 hover:text-[#025aa7] after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2.5px] after:bg-[#025aa7] after:rounded-full after:w-0 after:transition-all after:duration-300 hover:after:w-full cursor-pointer`;
 
 const contactClass = `group relative inline-block font-semibold text-[15px] tracking-wide 
-                      text-white bg-[#025aa7] hover:bg-[#024d8f] px-6 py-2.5 rounded-2xl 
-                      transition-all duration-300 hover:shadow-lg cursor-pointer
-                      after:content-[''] after:absolute after:left-0 after:-bottom-1 
-                      after:h-[2.5px] after:bg-white after:rounded-full after:w-0 
-                      after:transition-all after:duration-300 hover:after:w-full`;
+                    text-white bg-[#025aa7] hover:bg-[#024d8f] px-6 py-2.5 rounded-2xl 
+                    transition-all duration-300 hover:shadow-lg cursor-pointer
+                    after:content-[''] after:absolute after:left-0 after:-bottom-1 
+                    after:h-[2.5px] after:bg-white after:rounded-full after:w-0 
+                    after:transition-all after:duration-300 hover:after:w-full`;
 
 interface NavbarProps {
   onOpenContact?: () => void;
@@ -178,7 +178,14 @@ const handleLogout = async () => {
               Gallery
             </button>
 
-            <Link to="/catalog" className={linkClass}>Catalog</Link>
+            <Link 
+              to="/catalog" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className={linkClass}
+            >
+              Catalog
+            </Link>
             <Link to="/donate" className={linkClass}>Donate</Link>
 
             {/* Conditional Rendering: User Dropdown or Login */}
@@ -189,7 +196,6 @@ const handleLogout = async () => {
                   className="flex items-center gap-2 text-sm font-semibold text-[#025aa7] bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer border border-blue-100"
                 >
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  {/* <span>Welcome, {user?.first_name || "User"}</span> */}
                   <span>Welcome, {user?.first_name || "User"}</span>
                   <svg 
                     className={`w-4 h-4 text-[#025aa7] transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
@@ -204,11 +210,6 @@ const handleLogout = async () => {
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    {/* <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-xs text-gray-400 font-medium">Signed in as</p>
-                      <p className="text-sm font-semibold text-gray-800 truncate">{user?.email}</p>
-                    </div> */}
-                    {/* Render Dashboard button only for admin or superadmin */}
                     {['admin', 'superadmin'].includes(user?.role?.toLowerCase() ?? '') && (
                       <button
                         type="button"
@@ -222,16 +223,16 @@ const handleLogout = async () => {
                       </button>
                     )}
                     <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/Account/Profile");
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#025aa7] transition-colors duration-150 font-medium cursor-pointer"
-                      >
-                        Profile
-                      </button>
-                  
+                      type="button"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/Account/Profile");
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#025aa7] transition-colors duration-150 font-medium cursor-pointer"
+                    >
+                      Profile
+                    </button>
+                
                     <div className="border-t border-gray-100 my-1"></div>
 
                     <button
