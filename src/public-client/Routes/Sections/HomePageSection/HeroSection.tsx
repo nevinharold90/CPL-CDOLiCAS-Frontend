@@ -46,7 +46,7 @@ const HeroSection = ({
               </div>
               <div className="flex flex-col">
                 <h5 className="text-black uppercase text-xs sm:text-sm tracking-wider font-medium">Cagayan de Oro</h5>
-                <h1 className="text-black uppercase text-xl sm:text-2xl md:text-3xl font-bold leading-tight">Library Cataloging and Information System</h1>
+                <h1 className="text-black uppercase text-xl sm:text-2xl md:text-3xl font-bold leading-tight">City Public Library Information & Catalog Access System</h1>
               </div>
             </div>
 

@@ -134,8 +134,8 @@ const handleLogout = async () => {
               <img src={Licas} alt="Licas" />
             </div>
             <div className="leading-tight">
-              <div className="font-bold text-lg text-[#025aa7] tracking-tight">CDO LiCAS</div>
-              <div className="text-[10px] text-gray-500">Library Cataloging and Information System</div>
+              <div className="font-bold text-lg text-[#025aa7] tracking-tight">CDO CPLiCAS</div>
+              <div className="text-[10px] text-gray-500">City Public Library Information & Catalog Access System</div>
             </div>
           </div>
 

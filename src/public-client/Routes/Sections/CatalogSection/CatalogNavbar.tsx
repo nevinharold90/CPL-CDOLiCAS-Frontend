@@ -49,10 +49,10 @@ const CatalogNavbar = ({
           </div>
           <div className="leading-tight">
             <div className="font-bold text-lg text-[#025aa7] tracking-tight">
-              CDO LiCAS
+              CDO CPLiCAS
             </div>
             <div className="text-xs text-gray-500">
-              Library Cataloging and Information System
+              City Public Library Information & Catalog Access System
             </div>
           </div>
         </div>
