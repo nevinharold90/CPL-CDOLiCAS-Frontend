@@ -19,6 +19,7 @@ import CatalogPage from "./public-client/Routes/CatalogPage";
 import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/500.css";
 import "@fontsource/poppins/700.css";
+import DeweyExcelUploader from "./utils/excel";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -42,6 +43,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/members" element={<Members />} />
           <Route path="/book-list" element={<BookList />} />
+          <Route path="/dewey-excel-uploader" element={<DeweyExcelUploader />} />
         </Route>
 
       </Routes>

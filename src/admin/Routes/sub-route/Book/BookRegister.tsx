@@ -1,7 +1,7 @@
-// src/admin/Routes/sub-route/Book/BookRegister.tsx
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
+import axios from "axios";
 import {
   FiUpload,
   FiCamera,
@@ -15,12 +15,18 @@ import {
   FiCopy,
 } from "react-icons/fi";
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_API;
+const BOOK_TYPES = ["fiction", "non-fiction"] as const;
+const FORMATS = ["Book", "eBook", "Audiobook", "Journal", "Magazine"] as const;
+const CONDITIONS = ["Good", "Fair", "Poor", "Damaged"] as const;
+const SOURCE_OF_FUND = ["Purchased", "Donated", "Grant", "Government"] as const;
+
 interface BookFormData {
   title: string;
-  author: string;
+  authors: string[];
   isbn: string;
   deweyDecimalId: string;
-  bookType: string;
+  bookType: "fiction" | "non-fiction";
   cutter: string;
   yearPublished: string;
   location: string;
@@ -43,50 +49,55 @@ interface RegisteredBook extends BookFormData {
 
 const initialFormData: BookFormData = {
   title: "",
-  author: "",
+  authors: [],
   isbn: "",
   deweyDecimalId: "",
-  bookType: "",
+  bookType: "non-fiction",
   cutter: "",
   yearPublished: "",
   location: "",
   category: "",
-  sourceOfFund: "",
-  condition: "",
+  sourceOfFund: "Purchased",
+  condition: "Good",
   numberOfCopies: "1",
   summary: "",
   description: "",
   placeOfPublication: "",
-  format: "",
+  format: "Book",
 };
 
-const BOOK_TYPES = ["Book", "Magazine", "Journal", "Thesis", "Reference", "Periodical"];
-const FORMATS = ["Hardcover", "Paperback", "E-book", "Audiobook"];
-const CONDITIONS = ["New", "Good", "Fair", "Poor", "Damaged"];
-const SOURCE_OF_FUND = ["Purchased", "Donated", "Grant", "Institutional Budget"];
+const inputClass =
+  "w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition";
 
-// Generates a code like LIB-202609-0001, incrementing per month based on existing count
-function generateBookCode(existingCount: number) {
-  const now = new Date();
-  const yyyymm = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const seq = String(existingCount + 1).padStart(4, "0");
-  return `LIB-${yyyymm}-${seq}`;
-}
+const Field = ({
+  label,
+  span,
+  children,
+}: {
+  label: string;
+  span?: string;
+  children: React.ReactNode;
+}) => (
+  <div className={span || ""}>
+    <label className="block text-xs font-medium text-zinc-600 mb-1">
+      {label}
+    </label>
+    {children}
+  </div>
+);
 
 export default function RegisterBook() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<BookFormData>(initialFormData);
-
-  // Tracks which registered book is currently being edited (null = new entry)
+  const [authorInput, setAuthorInput] = useState("");
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
-
-  // ---------- Registered books list ----------
   const [registeredBooks, setRegisteredBooks] = useState<RegisteredBook[]>([]);
   const [listSearch, setListSearch] = useState("");
   const [viewingBook, setViewingBook] = useState<RegisteredBook | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ---------- Image state ----------
+  // Image & Camera States
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -99,7 +110,47 @@ export default function RegisterBook() {
   const barcodeRef = useRef<HTMLCanvasElement>(null);
   const formTopRef = useRef<HTMLDivElement>(null);
 
-  // Universal handler for text/select/textarea inputs
+  // Auto-generate barcode in modal view
+  useEffect(() => {
+    if (viewingBook && barcodeRef.current) {
+      try {
+        JsBarcode(barcodeRef.current, viewingBook.code || viewingBook.isbn, {
+          format: "CODE128",
+          width: 1.5,
+          height: 50,
+          displayValue: true,
+        });
+      } catch (e) {
+        console.error("Barcode generation error:", e);
+      }
+    }
+  }, [viewingBook]);
+
+  const handleAddAuthor = () => {
+    const trimmed = authorInput.trim();
+    if (trimmed && !formData.authors.includes(trimmed)) {
+      setFormData((prev) => ({
+        ...prev,
+        authors: [...prev.authors, trimmed],
+      }));
+      setAuthorInput("");
+    }
+  };
+
+  const handleRemoveAuthor = (indexToRemove: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      authors: prev.authors.filter((_, index) => index !== indexToRemove),
+    }));
+  };
+
+  const handleAuthorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddAuthor();
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -110,7 +161,6 @@ export default function RegisterBook() {
     }));
   };
 
-  // ---------- File upload ----------
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -121,9 +171,10 @@ export default function RegisterBook() {
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (!file || !file.type.startsWith("image/")) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const removeImage = () => {
@@ -133,185 +184,197 @@ export default function RegisterBook() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // ---------- Camera capture ----------
+  // Camera Handlers
   const startCamera = async () => {
-    setCameraError(null);
     setIsCameraOpen(true);
+    setCameraError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
-      console.error("Camera access error:", err);
-      setCameraError(
-        "Couldn't access the camera. Check browser permissions and make sure you're on HTTPS or localhost."
-      );
+      setCameraError("Camera access denied or device not found.");
     }
   };
 
   const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
     setIsCameraOpen(false);
   };
 
   const capturePhoto = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const file = new File([blob], `book-cover-${Date.now()}.jpg`, {
-        type: "image/jpeg",
-      });
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(blob));
-      stopCamera();
-    }, "image/jpeg", 0.92);
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg");
+        setImagePreview(dataUrl);
+        stopCamera();
+      }
+    }
   };
 
-  // Clean up camera stream on unmount
-  useEffect(() => {
-    return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-    };
-  }, []);
-
-  // ---------- Generate barcode whenever the details modal opens ----------
-  useEffect(() => {
-    if (!viewingBook || !barcodeRef.current) return;
-    JsBarcode(barcodeRef.current, viewingBook.code, {
-      format: "CODE128",
-      width: 2.2,
-      height: 70,
-      fontSize: 16,
-      displayValue: true,
-      textAlign: "center",
-      margin: 10,
-    });
-  }, [viewingBook]);
-
-  // ---------- Form reset ----------
   const resetForm = () => {
     setFormData(initialFormData);
+    setAuthorInput("");
     setEditingBookId(null);
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImagePreview(null);
-    setImageFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  // ---------- Actions ----------
-  const handleSave = () => {
-    if (!formData.title.trim()) {
-      alert("Please enter at least a book title before saving.");
-      return;
-    }
-
-    if (editingBookId) {
-      // Update existing book, keep its original code + registeredAt
-      setRegisteredBooks((prev) =>
-        prev.map((b) =>
-          b.id === editingBookId
-            ? { ...b, ...formData, coverUrl: imagePreview }
-            : b
-        )
-      );
-      console.log("Updated book:", editingBookId, formData, "Cover file:", imageFile);
-      // TODO: replace with actual API call (PUT/PATCH, multipart/form-data if cover changed)
-      resetForm();
-    } else {
-      const newBook: RegisteredBook = {
-        ...formData,
-        id: `${Date.now()}`,
-        code: generateBookCode(registeredBooks.length),
-        coverUrl: imagePreview,
-        registeredAt: new Date().toISOString(),
-      };
-
-      setRegisteredBooks((prev) => [newBook, ...prev]);
-      console.log("Saved book:", newBook, "Cover file:", imageFile);
-      // TODO: replace with actual API call (multipart/form-data with imageFile)
-    }
+    removeImage();
   };
 
   const handleRegisterAgain = () => {
     resetForm();
+    formTopRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleCancel = () => {
     resetForm();
-    if (window.opener) {
-      window.close();
-    } else {
-      navigate("/book-list");
+    navigate(-1);
+  };
+
+  // Backend Integration API Call
+  const handleSave = async () => {
+    if (!formData.title.trim() || !formData.isbn.trim()) {
+      alert("Please enter at least Title and ISBN.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload: Record<string, any> = {
+        title: formData.title,
+        isbn: formData.isbn,
+        summary: formData.summary || null,
+        description: formData.description || null,
+        author_ids: formData.authors.map((name) => name.trim()).filter(Boolean),
+        book_type: formData.bookType,
+        cutter: formData.cutter,
+        year_published: formData.yearPublished,
+        location: formData.location,
+        category: formData.category,
+        place_of_publication: formData.placeOfPublication,
+        material_type: formData.format || "Book",
+        source_of_fund: formData.sourceOfFund || "Purchased",
+        condition: formData.condition || "Good",
+        number_of_copies: parseInt(formData.numberOfCopies, 10) || 1,
+        cover_image: imagePreview || null,
+      };
+
+      if (formData.bookType === "non-fiction" && formData.deweyDecimalId) {
+        payload.dewey_decimal_id = parseInt(formData.deweyDecimalId, 10);
+      }
+
+      const response = await axios.post(
+        `${API_BASE_URL}/book/register`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        alert("Book successfully saved!");
+        const apiBook = response.data.data.book;
+        const newBook: RegisteredBook = {
+          ...formData,
+          id: String(apiBook.id),
+          code: response.data.data.call_number || `LIB-${apiBook.id}`,
+          coverUrl: imagePreview,
+          registeredAt: apiBook.created_at || new Date().toISOString(),
+        };
+
+        if (editingBookId) {
+          setRegisteredBooks((prev) =>
+            prev.map((b) => (b.id === editingBookId ? newBook : b))
+          );
+        } else {
+          setRegisteredBooks((prev) => [newBook, ...prev]);
+        }
+        resetForm();
+      }
+    } catch (error: any) {
+      console.error("Save Error:", error);
+      if (error.response?.status === 422) {
+        const errors = error.response.data.errors;
+        const msg = Object.values(errors).flat().join("\n");
+        alert(`Validation Error:\n${msg}`);
+      } else {
+        alert("Failed to save book record. Please check server logs.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEditBook = (book: RegisteredBook) => {
-    const { id, code, coverUrl, registeredAt, ...rest } = book;
-    setFormData(rest);
-    setEditingBookId(id);
-    setImagePreview(coverUrl);
-    setImageFile(null); // existing cover, no new file selected yet
-    formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setEditingBookId(book.id);
+    setFormData({
+      title: book.title,
+      authors: book.authors,
+      isbn: book.isbn,
+      deweyDecimalId: book.deweyDecimalId,
+      bookType: book.bookType,
+      cutter: book.cutter,
+      yearPublished: book.yearPublished,
+      location: book.location,
+      category: book.category,
+      sourceOfFund: book.sourceOfFund,
+      condition: book.condition,
+      numberOfCopies: book.numberOfCopies,
+      summary: book.summary,
+      description: book.description,
+      placeOfPublication: book.placeOfPublication,
+      format: book.format,
+    });
+    setImagePreview(book.coverUrl);
+    formTopRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleRemoveBook = (book: RegisteredBook) => {
-    const confirmed = window.confirm(
-      `Remove "${book.title || "this book"}" from the registered list? This cannot be undone.`
-    );
-    if (!confirmed) return;
-
-    setRegisteredBooks((prev) => prev.filter((b) => b.id !== book.id));
-
-    // If the book being removed was mid-edit, clear the form back to a fresh entry
-    if (editingBookId === book.id) {
-      resetForm();
-    }
-    // If it was open in the details modal, close it
-    if (viewingBook?.id === book.id) {
-      setViewingBook(null);
+    if (window.confirm(`Are you sure you want to remove "${book.title}"?`)) {
+      setRegisteredBooks((prev) => prev.filter((b) => b.id !== book.id));
+      if (editingBookId === book.id) resetForm();
     }
   };
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    alert("Code copied!");
+    alert(`Copied code: ${code}`);
   };
 
-  const filteredRegisteredBooks = registeredBooks.filter((b) => {
-    if (!listSearch.trim()) return true;
-    const term = listSearch.toLowerCase();
+  const formatDate = (isoString: string) => {
+    try {
+      return new Date(isoString).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return isoString;
+    }
+  };
+
+  const filteredRegisteredBooks = registeredBooks.filter((book) => {
+    const q = listSearch.toLowerCase();
     return (
-      b.title.toLowerCase().includes(term) ||
-      b.author.toLowerCase().includes(term) ||
-      b.isbn.toLowerCase().includes(term) ||
-      b.category.toLowerCase().includes(term) ||
-      b.code.toLowerCase().includes(term)
+      book.title.toLowerCase().includes(q) ||
+      book.authors.some((author) => author.toLowerCase().includes(q)) ||
+      book.isbn.toLowerCase().includes(q) ||
+      book.code.toLowerCase().includes(q)
     );
   });
-
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleString("en-PH", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
 
   return (
     <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-linear-to-b from-zinc-50 to-white font-[Poppins]">
@@ -329,7 +392,7 @@ export default function RegisterBook() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
-          {/* ---------- Cover image (wider: 3/12 on desktop) ---------- */}
+          {/* Cover Image Upload (3/12 Desktop) */}
           <div className="lg:col-span-3">
             <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-5 space-y-4">
               <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wider">
@@ -392,7 +455,7 @@ export default function RegisterBook() {
             </div>
           </div>
 
-          {/* ---------- Form fields (5/12 on desktop) ---------- */}
+          {/* Form Fields (5/12 Desktop) */}
           <div className="lg:col-span-5 bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 sm:p-6 space-y-6">
             {/* Basic Info */}
             <div>
@@ -410,14 +473,47 @@ export default function RegisterBook() {
                   />
                 </Field>
 
-                <Field label="Author">
-                  <input
-                    name="author"
-                    value={formData.author}
-                    onChange={handleChange}
-                    placeholder="Author name"
-                    className={inputClass}
-                  />
+                <Field label="Authors" span="md:col-span-2">
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={authorInput}
+                        onChange={(e) => setAuthorInput(e.target.value)}
+                        onKeyDown={handleAuthorKeyDown}
+                        placeholder="Type author name and press Enter"
+                        className={inputClass}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddAuthor}
+                        className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition cursor-pointer shrink-0"
+                      >
+                        Add
+                      </button>
+                    </div>
+
+                    {/* Author Tags Display */}
+                    {formData.authors.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {formData.authors.map((author, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-200"
+                          >
+                            {author}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAuthor(index)}
+                              className="text-indigo-400 hover:text-indigo-900 cursor-pointer rounded-full p-0.5"
+                            >
+                              <FiX size={12} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </Field>
 
                 <Field label="ISBN">
@@ -616,13 +712,18 @@ export default function RegisterBook() {
               </div>
             </div>
 
-            {/* ---------- Bottom action bar ---------- */}
+            {/* Bottom Action Bar */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-zinc-100">
               <button
                 onClick={handleSave}
-                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer transition"
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold cursor-pointer transition"
               >
-                {editingBookId ? "Update" : "Save"}
+                {isSubmitting
+                  ? "Saving..."
+                  : editingBookId
+                  ? "Update"
+                  : "Save"}
               </button>
               <button
                 onClick={handleRegisterAgain}
@@ -639,7 +740,7 @@ export default function RegisterBook() {
             </div>
           </div>
 
-          {/* ---------- Registered books list (4/12 on desktop) ---------- */}
+          {/* Registered Books List (4/12 Desktop) */}
           <div className="lg:col-span-4">
             <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 sm:p-5 flex flex-col max-h-[70vh] lg:max-h-[85vh]">
               <div className="flex items-center gap-2 mb-4">
@@ -707,7 +808,7 @@ export default function RegisterBook() {
                           {book.title || "Untitled"}
                         </p>
                         <p className="text-xs text-zinc-500 truncate">
-                          {book.author || "Unknown author"}
+                          {book.authors?.join(", ") || "Unknown author"}
                         </p>
                         <p className="text-xs font-mono text-indigo-500 mt-1">
                           {book.code}
@@ -718,7 +819,6 @@ export default function RegisterBook() {
                       </div>
                     </button>
 
-                    {/* Row actions */}
                     <div className="flex flex-col gap-1.5 shrink-0">
                       <button
                         onClick={() => setViewingBook(book)}
@@ -750,7 +850,7 @@ export default function RegisterBook() {
         </div>
       </div>
 
-      {/* ---------- Camera Modal ---------- */}
+      {/* Camera Modal */}
       {isCameraOpen && (
         <div className="fixed inset-0 z-50 bg-zinc-950/90 flex items-center justify-center p-4">
           <div className="bg-zinc-900 rounded-2xl overflow-hidden max-w-lg w-full shadow-2xl">
@@ -770,28 +870,30 @@ export default function RegisterBook() {
                   {cameraError}
                 </p>
               ) : (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full rounded-xl bg-black aspect-video object-cover"
-                />
+                <div className="relative rounded-xl overflow-hidden bg-black aspect-[4/3]">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <canvas ref={canvasRef} className="hidden" />
+                </div>
               )}
-              <canvas ref={canvasRef} className="hidden" />
 
               <div className="flex gap-3">
                 <button
-                  onClick={stopCamera}
-                  className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm font-medium cursor-pointer transition"
-                >
-                  Cancel
-                </button>
-                <button
                   onClick={capturePhoto}
                   disabled={!!cameraError}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium cursor-pointer transition"
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold cursor-pointer transition"
                 >
                   Take Photo
+                </button>
+                <button
+                  onClick={stopCamera}
+                  className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm font-semibold cursor-pointer transition"
+                >
+                  Cancel
                 </button>
               </div>
             </div>
@@ -799,82 +901,119 @@ export default function RegisterBook() {
         </div>
       )}
 
-      {/* ---------- View Book Details Modal ---------- */}
+      {/* Book Details Modal */}
       {viewingBook && (
-        <div className="fixed inset-0 z-50 bg-zinc-950/70 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl overflow-hidden max-w-2xl w-full shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl overflow-hidden max-w-xl w-full shadow-2xl border border-zinc-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
-              <h3 className="text-lg font-bold text-zinc-800">Book Details</h3>
+              <h3 className="text-zinc-800 font-bold text-lg">Book Details</h3>
               <button
                 onClick={() => setViewingBook(null)}
-                className="text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                className="text-zinc-400 hover:text-zinc-700 cursor-pointer p-1 rounded-lg transition"
               >
                 <FiX size={20} />
               </button>
             </div>
 
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-6">
-              {/* Cover + basic info */}
-              <div className="flex flex-col sm:flex-row gap-5">
+            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+              <div className="flex flex-col sm:flex-row gap-5 items-start">
                 {viewingBook.coverUrl ? (
                   <img
                     src={viewingBook.coverUrl}
                     alt={viewingBook.title}
-                    className="w-28 h-40 object-cover rounded-xl border border-zinc-200 shrink-0 mx-auto sm:mx-0"
+                    className="w-32 h-44 object-cover rounded-xl border border-zinc-200 shadow-xs shrink-0 mx-auto sm:mx-0"
                   />
                 ) : (
-                  <div className="w-28 h-40 flex items-center justify-center bg-zinc-100 rounded-xl shrink-0 text-zinc-400 mx-auto sm:mx-0">
-                    <FiImage size={28} />
+                  <div className="w-32 h-44 flex flex-col items-center justify-center bg-zinc-100 rounded-xl border border-zinc-200 shrink-0 text-zinc-400 mx-auto sm:mx-0">
+                    <FiImage size={32} />
+                    <span className="text-xs mt-1">No Cover</span>
                   </div>
                 )}
-                <div className="min-w-0 text-center sm:text-left">
-                  <h4 className="text-xl font-bold text-zinc-800">
-                    {viewingBook.title || "Untitled"}
+
+                <div className="space-y-2 flex-1 min-w-0">
+                  <h4 className="text-xl font-bold text-zinc-800 leading-snug">
+                    {viewingBook.title}
                   </h4>
-                  <p className="text-zinc-500 mt-1">{viewingBook.author || "—"}</p>
-                  <p className="text-xs text-zinc-400 mt-2">
-                    Registered {formatDate(viewingBook.registeredAt)}
+                  <p className="text-sm font-medium text-indigo-600">
+                    {viewingBook.authors?.join(", ") || "Unknown Author"}
                   </p>
+                  <p className="text-xs text-zinc-500">
+                    Published {viewingBook.yearPublished || "N/A"}
+                    {viewingBook.placeOfPublication ? ` in ${viewingBook.placeOfPublication}` : ""}
+                  </p>
+
+                  <div className="pt-2 flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md border border-indigo-100">
+                      {viewingBook.code}
+                    </span>
+                    <button
+                      onClick={() => copyCode(viewingBook.code)}
+                      className="p-1.5 text-zinc-400 hover:text-indigo-600 cursor-pointer rounded-md hover:bg-zinc-100"
+                      title="Copy Call Number"
+                    >
+                      <FiCopy size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Detailed fields */}
-              <DetailGrid book={viewingBook} />
-
-              {viewingBook.summary && (
-                <DetailBlock label="Summary" value={viewingBook.summary} />
-              )}
-              {viewingBook.description && (
-                <DetailBlock label="Description" value={viewingBook.description} />
-              )}
-
-              {/* ---------- Automated barcode ---------- */}
-              <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 flex flex-col items-center gap-2 overflow-x-auto">
-                <canvas ref={barcodeRef} />
-                <button
-                  onClick={() => copyCode(viewingBook.code)}
-                  className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 cursor-pointer"
-                >
-                  <FiCopy size={12} />
-                  Copy code
-                </button>
+              {/* Barcode Output */}
+              <div className="flex flex-col items-center justify-center p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
+                <canvas ref={barcodeRef} className="max-w-full" />
               </div>
+
+              {/* Metadata Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+                  <span className="text-zinc-400 block mb-0.5">ISBN</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.isbn || "N/A"}</span>
+                </div>
+                <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+                  <span className="text-zinc-400 block mb-0.5">Dewey Decimal</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.deweyDecimalId || "N/A"}</span>
+                </div>
+                <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+                  <span className="text-zinc-400 block mb-0.5">Cutter</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.cutter || "N/A"}</span>
+                </div>
+                <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+                  <span className="text-zinc-400 block mb-0.5">Format</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.format}</span>
+                </div>
+                <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+                  <span className="text-zinc-400 block mb-0.5">Location</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.location || "N/A"}</span>
+                </div>
+                <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+                  <span className="text-zinc-400 block mb-0.5">Copies</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.numberOfCopies}</span>
+                </div>
+              </div>
+
+              {/* Details Text */}
+              {viewingBook.summary && (
+                <div className="space-y-1">
+                  <h5 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Summary</h5>
+                  <p className="text-sm text-zinc-700 leading-relaxed bg-zinc-50 p-3 rounded-lg border border-zinc-100">
+                    {viewingBook.summary}
+                  </p>
+                </div>
+              )}
+
+              {viewingBook.description && (
+                <div className="space-y-1">
+                  <h5 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Description</h5>
+                  <p className="text-sm text-zinc-700 leading-relaxed bg-zinc-50 p-3 rounded-lg border border-zinc-100">
+                    {viewingBook.description}
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="px-4 sm:px-6 py-4 border-t border-zinc-100 flex flex-col sm:flex-row justify-between gap-3">
-              <button
-                onClick={() => {
-                  handleEditBook(viewingBook);
-                  setViewingBook(null);
-                }}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium cursor-pointer transition"
-              >
-                <FiEdit2 size={14} />
-                Edit
-              </button>
+            <div className="px-6 py-4 bg-zinc-50 border-t border-zinc-100 flex justify-end">
               <button
                 onClick={() => setViewingBook(null)}
-                className="px-6 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg text-sm font-medium cursor-pointer transition"
+                className="px-5 py-2 bg-zinc-800 hover:bg-zinc-900 text-white rounded-lg text-sm font-semibold cursor-pointer transition"
               >
                 Close
               </button>
@@ -885,69 +1024,3 @@ export default function RegisterBook() {
     </div>
   );
 }
-
-// ---------- Small helper components ----------
-function Field({
-  label,
-  children,
-  span,
-}: {
-  label: string;
-  children: React.ReactNode;
-  span?: string;
-}) {
-  return (
-    <div className={span}>
-      <label className="block text-sm font-medium text-zinc-600 mb-1.5">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-function DetailGrid({ book }: { book: RegisteredBook }) {
-  const rows: [string, string][] = [
-    ["ISBN", book.isbn],
-    ["Category", book.category],
-    ["Book Type", book.bookType],
-    ["Format", book.format],
-    ["Dewey Decimal ID", book.deweyDecimalId],
-    ["Cutter", book.cutter],
-    ["Year Published", book.yearPublished],
-    ["Place of Publication", book.placeOfPublication],
-    ["Location", book.location],
-    ["Number of Copies", book.numberOfCopies],
-    ["Condition", book.condition],
-    ["Source of Fund", book.sourceOfFund],
-  ];
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-      {rows.map(([label, value]) => (
-        <div key={label}>
-          <p className="text-xs font-medium text-zinc-400 uppercase tracking-wide">
-            {label}
-          </p>
-          <p className="text-sm text-zinc-800 mt-0.5">{value || "—"}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function DetailBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-1">
-        {label}
-      </p>
-      <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-const inputClass =
-  "w-full px-4 py-2.5 bg-white border border-zinc-300 rounded-lg text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition";
