@@ -1,208 +1,204 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import JsBarcode from "jsbarcode";
-import axios from "axios";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  ChangeEvent,
+  KeyboardEvent,
+  DragEvent,
+} from "react";
 import {
-  FiUpload,
-  FiCamera,
   FiX,
   FiImage,
+  FiUpload,
+  FiCamera,
+  FiBook,
+  FiSearch,
   FiEye,
   FiEdit2,
   FiTrash2,
-  FiBook,
-  FiSearch,
   FiCopy,
 } from "react-icons/fi";
+import JsBarcode from "jsbarcode";
+import { DeweyDecimalSelect, DeweyItem } from "./components/deweyDecimal";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_API;
-const BOOK_TYPES = ["fiction", "non-fiction"] as const;
-const FORMATS = ["Book", "eBook", "Audiobook", "Journal", "Magazine"] as const;
-const CONDITIONS = ["Good", "Fair", "Poor", "Damaged"] as const;
-const SOURCE_OF_FUND = ["Purchased", "Donated", "Grant", "Government"] as const;
+// Dropdown constants
+const BOOK_TYPES = ["Fiction", "Non-Fiction", "Reference", "Textbook", "Periodical"];
+const FORMATS = ["Hardcover", "Paperback", "E-Book", "Audiobook"];
+const CONDITIONS = ["New", "Good", "Fair", "Poor"];
+const SOURCE_OF_FUND = ["Government", "Donation", "Library Budget", "Grant"];
 
-interface BookFormData {
+// Data Interfaces
+export interface BookFormData {
   title: string;
   authors: string[];
   isbn: string;
-  deweyDecimalId: string;
-  bookType: "fiction" | "non-fiction";
-  cutter: string;
-  yearPublished: string;
-  location: string;
   category: string;
-  sourceOfFund: string;
+  bookType: string;
+  deweyDecimalId: string;
+  cutter: string;
+  format: string;
+  yearPublished: string;
+  placeOfPublication: string;
+  location: string;
+  numberOfCopies: number;
   condition: string;
-  numberOfCopies: string;
+  sourceOfFund: string;
   summary: string;
   description: string;
-  placeOfPublication: string;
-  format: string;
 }
 
-interface RegisteredBook extends BookFormData {
+export interface BookItem extends BookFormData {
   id: string;
-  code: string;
   coverUrl: string | null;
-  registeredAt: string;
+  code: string;
+  registeredAt: Date;
 }
 
-const initialFormData: BookFormData = {
-  title: "",
-  authors: [],
-  isbn: "",
-  deweyDecimalId: "",
-  bookType: "non-fiction",
-  cutter: "",
-  yearPublished: "",
-  location: "",
-  category: "",
-  sourceOfFund: "Purchased",
-  condition: "Good",
-  numberOfCopies: "1",
-  summary: "",
-  description: "",
-  placeOfPublication: "",
-  format: "Book",
-};
-
-const inputClass =
-  "w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition";
-
-const Field = ({
-  label,
-  span,
-  children,
-}: {
+interface FieldProps {
   label: string;
-  span?: string;
   children: React.ReactNode;
-}) => (
-  <div className={span || ""}>
-    <label className="block text-xs font-medium text-zinc-600 mb-1">
+  span?: string;
+}
+
+// Helper component for form fields
+const Field: React.FC<FieldProps> = ({ label, children, span = "" }) => (
+  <div className={`space-y-1 ${span}`}>
+    <label className="block text-xs font-semibold text-zinc-600 uppercase tracking-wider">
       {label}
     </label>
     {children}
   </div>
 );
 
-export default function RegisterBook() {
-  const navigate = useNavigate();
+const inputClass =
+  "w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition";
 
-  const [formData, setFormData] = useState<BookFormData>(initialFormData);
-  const [authorInput, setAuthorInput] = useState("");
-  const [editingBookId, setEditingBookId] = useState<string | null>(null);
-  const [registeredBooks, setRegisteredBooks] = useState<RegisteredBook[]>([]);
-  const [listSearch, setListSearch] = useState("");
-  const [viewingBook, setViewingBook] = useState<RegisteredBook | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const initialFormState: BookFormData = {
+  title: "",
+  authors: [],
+  isbn: "",
+  category: "",
+  bookType: "",
+  deweyDecimalId: "",
+  cutter: "",
+  format: "",
+  yearPublished: "",
+  placeOfPublication: "",
+  location: "",
+  numberOfCopies: 1,
+  condition: "",
+  sourceOfFund: "",
+  summary: "",
+  description: "",
+};
 
-  // Image & Camera States
+export default function BookRegistration() {
+  // Typed State Variables
+  const [formData, setFormData] = useState<BookFormData>(initialFormState);
+  const [authorInput, setAuthorInput] = useState<string>("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [registeredBooks, setRegisteredBooks] = useState<BookItem[]>([]);
+  const [listSearch, setListSearch] = useState<string>("");
+  const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [viewingBook, setViewingBook] = useState<BookItem | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const barcodeRef = useRef<HTMLCanvasElement>(null);
-  const formTopRef = useRef<HTMLDivElement>(null);
+  // Typed HTML Refs
+  const formTopRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const barcodeRef = useRef<SVGSVGElement | null>(null);
 
-  // Auto-generate barcode in modal view
+  // Generate Barcode when viewing a book in detail modal
   useEffect(() => {
     if (viewingBook && barcodeRef.current) {
       try {
-        JsBarcode(barcodeRef.current, viewingBook.code || viewingBook.isbn, {
+        JsBarcode(barcodeRef.current, viewingBook.code || "00000000", {
           format: "CODE128",
-          width: 1.5,
+          width: 2,
           height: 50,
           displayValue: true,
         });
-      } catch (e) {
-        console.error("Barcode generation error:", e);
+      } catch (err) {
+        console.error("Barcode generation failed:", err);
       }
     }
   }, [viewingBook]);
 
+  // Form Handlers
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleAddAuthor = () => {
-    const trimmed = authorInput.trim();
-    if (trimmed && !formData.authors.includes(trimmed)) {
+    if (authorInput.trim()) {
       setFormData((prev) => ({
         ...prev,
-        authors: [...prev.authors, trimmed],
+        authors: [...prev.authors, authorInput.trim()],
       }));
       setAuthorInput("");
     }
   };
 
-  const handleRemoveAuthor = (indexToRemove: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      authors: prev.authors.filter((_, index) => index !== indexToRemove),
-    }));
-  };
-
-  const handleAuthorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleAuthorKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       handleAddAuthor();
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
+  const handleRemoveAuthor = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      authors: prev.authors.filter((_, i) => i !== index),
     }));
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Cover Image Handlers
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      setImageFile(file);
+    if (file && file.type.startsWith("image/")) {
       setImagePreview(URL.createObjectURL(file));
     }
   };
 
   const removeImage = () => {
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(null);
-    setImageFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   // Camera Handlers
   const startCamera = async () => {
-    setIsCameraOpen(true);
     setCameraError(null);
+    setIsCameraOpen(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
-      setCameraError("Camera access denied or device not found.");
+      setCameraError("Unable to access camera. Please check permissions.");
     }
   };
 
   const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
     }
     setIsCameraOpen(false);
   };
@@ -216,163 +212,93 @@ export default function RegisterBook() {
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/jpeg");
-        setImagePreview(dataUrl);
-        stopCamera();
+        setImagePreview(canvas.toDataURL("image/png"));
       }
+      stopCamera();
     }
   };
 
-  const resetForm = () => {
-    setFormData(initialFormData);
-    setAuthorInput("");
-    setEditingBookId(null);
-    removeImage();
+  // Save / Update Actions
+  const handleSave = () => {
+    setIsSubmitting(true);
+    setTimeout(() => {
+      const generatedCode = `${formData.deweyDecimalId || "000"} ${formData.cutter || "C00"}`;
+
+      if (editingBookId) {
+        setRegisteredBooks((prev) =>
+          prev.map((b) =>
+            b.id === editingBookId
+              ? {
+                  ...formData,
+                  id: editingBookId,
+                  coverUrl: imagePreview,
+                  code: generatedCode,
+                  registeredAt: b.registeredAt,
+                }
+              : b
+          )
+        );
+      } else {
+        const newBook: BookItem = {
+          ...formData,
+          id: Date.now().toString(),
+          coverUrl: imagePreview,
+          code: generatedCode,
+          registeredAt: new Date(),
+        };
+        setRegisteredBooks((prev) => [newBook, ...prev]);
+      }
+
+      handleRegisterAgain();
+      setIsSubmitting(false);
+    }, 500);
   };
 
   const handleRegisterAgain = () => {
-    resetForm();
-    formTopRef.current?.scrollIntoView({ behavior: "smooth" });
+    setFormData(initialFormState);
+    setImagePreview(null);
+    setEditingBookId(null);
+    setAuthorInput("");
   };
 
   const handleCancel = () => {
-    resetForm();
-    navigate(-1);
-  };
-
-  // Backend Integration API Call
-  const handleSave = async () => {
-    if (!formData.title.trim() || !formData.isbn.trim()) {
-      alert("Please enter at least Title and ISBN.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const payload: Record<string, any> = {
-        title: formData.title,
-        isbn: formData.isbn,
-        summary: formData.summary || null,
-        description: formData.description || null,
-        author_ids: formData.authors.map((name) => name.trim()).filter(Boolean),
-        book_type: formData.bookType,
-        cutter: formData.cutter,
-        year_published: formData.yearPublished,
-        location: formData.location,
-        category: formData.category,
-        place_of_publication: formData.placeOfPublication,
-        material_type: formData.format || "Book",
-        source_of_fund: formData.sourceOfFund || "Purchased",
-        condition: formData.condition || "Good",
-        number_of_copies: parseInt(formData.numberOfCopies, 10) || 1,
-        cover_image: imagePreview || null,
-      };
-
-      if (formData.bookType === "non-fiction" && formData.deweyDecimalId) {
-        payload.dewey_decimal_id = parseInt(formData.deweyDecimalId, 10);
-      }
-
-      const response = await axios.post(
-        `${API_BASE_URL}/book/register`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
-
-      if (response.data.success) {
-        alert("Book successfully saved!");
-        const apiBook = response.data.data.book;
-        const newBook: RegisteredBook = {
-          ...formData,
-          id: String(apiBook.id),
-          code: response.data.data.call_number || `LIB-${apiBook.id}`,
-          coverUrl: imagePreview,
-          registeredAt: apiBook.created_at || new Date().toISOString(),
-        };
-
-        if (editingBookId) {
-          setRegisteredBooks((prev) =>
-            prev.map((b) => (b.id === editingBookId ? newBook : b))
-          );
-        } else {
-          setRegisteredBooks((prev) => [newBook, ...prev]);
-        }
-        resetForm();
-      }
-    } catch (error: any) {
-      console.error("Save Error:", error);
-      if (error.response?.status === 422) {
-        const errors = error.response.data.errors;
-        const msg = Object.values(errors).flat().join("\n");
-        alert(`Validation Error:\n${msg}`);
-      } else {
-        alert("Failed to save book record. Please check server logs.");
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleEditBook = (book: RegisteredBook) => {
-    setEditingBookId(book.id);
-    setFormData({
-      title: book.title,
-      authors: book.authors,
-      isbn: book.isbn,
-      deweyDecimalId: book.deweyDecimalId,
-      bookType: book.bookType,
-      cutter: book.cutter,
-      yearPublished: book.yearPublished,
-      location: book.location,
-      category: book.category,
-      sourceOfFund: book.sourceOfFund,
-      condition: book.condition,
-      numberOfCopies: book.numberOfCopies,
-      summary: book.summary,
-      description: book.description,
-      placeOfPublication: book.placeOfPublication,
-      format: book.format,
-    });
-    setImagePreview(book.coverUrl);
+    handleRegisterAgain();
     formTopRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleRemoveBook = (book: RegisteredBook) => {
-    if (window.confirm(`Are you sure you want to remove "${book.title}"?`)) {
-      setRegisteredBooks((prev) => prev.filter((b) => b.id !== book.id));
-      if (editingBookId === book.id) resetForm();
-    }
+  const handleEditBook = (book: BookItem) => {
+    setFormData(book);
+    setImagePreview(book.coverUrl || null);
+    setEditingBookId(book.id);
+    formTopRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleRemoveBook = (book: BookItem) => {
+    setRegisteredBooks((prev) => prev.filter((b) => b.id !== book.id));
+    if (editingBookId === book.id) handleRegisterAgain();
   };
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    alert(`Copied code: ${code}`);
   };
 
-  const formatDate = (isoString: string) => {
-    try {
-      return new Date(isoString).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    } catch {
-      return isoString;
-    }
+  const formatDate = (date: Date | string | null) => {
+    if (!date) return "";
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
+  // Search Filter
   const filteredRegisteredBooks = registeredBooks.filter((book) => {
     const q = listSearch.toLowerCase();
     return (
-      book.title.toLowerCase().includes(q) ||
-      book.authors.some((author) => author.toLowerCase().includes(q)) ||
-      book.isbn.toLowerCase().includes(q) ||
-      book.code.toLowerCase().includes(q)
+      book.title?.toLowerCase().includes(q) ||
+      book.authors?.some((a) => a.toLowerCase().includes(q)) ||
+      book.isbn?.toLowerCase().includes(q) ||
+      book.code?.toLowerCase().includes(q)
     );
   });
 
@@ -526,7 +452,7 @@ export default function RegisterBook() {
                   />
                 </Field>
 
-                <Field label="Category">
+                {/* <Field label="Category">
                   <input
                     name="category"
                     value={formData.category}
@@ -534,7 +460,7 @@ export default function RegisterBook() {
                     placeholder="e.g. Programming, Fiction"
                     className={inputClass}
                   />
-                </Field>
+                </Field> */}
 
                 <Field label="Book Type">
                   <select
@@ -557,13 +483,27 @@ export default function RegisterBook() {
               <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wider mb-3">
                 Classification
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Field label="Dewey Decimal ID">
-                  <input
-                    name="deweyDecimalId"
+                  <DeweyDecimalSelect
                     value={formData.deweyDecimalId}
+                    onChange={(deweyNumber: string, selectedItem: DeweyItem | null) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        deweyDecimalId: deweyNumber,
+                        category: selectedItem ? selectedItem.class_name : prev.category,
+                        description: selectedItem?.description ? selectedItem.description : prev.description,
+                      }))
+                    }
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Category">
+                  <input
+                    name="category"
+                    value={formData.category}
                     onChange={handleChange}
-                    placeholder="e.g. 005.13"
+                    placeholder="Auto-filled category"
                     className={inputClass}
                   />
                 </Field>
@@ -978,7 +918,7 @@ export default function RegisterBook() {
                 </div>
                 <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
                   <span className="text-zinc-400 block mb-0.5">Format</span>
-                  <span className="font-semibold text-zinc-700">{viewingBook.format}</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.format || "N/A"}</span>
                 </div>
                 <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
                   <span className="text-zinc-400 block mb-0.5">Location</span>
