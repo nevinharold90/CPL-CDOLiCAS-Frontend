@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 import api from './../_api/axios'; // Import your custom Axios instance
 
 export default function DeweyExcelBatchUploader() {

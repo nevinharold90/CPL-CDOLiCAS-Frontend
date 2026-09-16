@@ -10,6 +10,7 @@ const PhotoGallerySection = lazy(() => import("./Sections/HomePageSection/PhotoG
 const RunningTestimonialSection = lazy(() => import("./Sections/HomePageSection/RunningTestimonialSection"));
 const FeedbackSection = lazy(() => import("./Sections/HomePageSection/FeedbackSection"));
 const FooterSection = lazy(() => import("./Sections/HomePageSection/FooterSection"));
+const LinkSection = lazy(() => import("./Sections/HomePageSection/LinkSection"));
 
 import HeroSection from "./Sections/HomePageSection/HeroSection";
 import ImageModal from "../components/Modals/ImageModal";
@@ -123,6 +124,8 @@ const Homepage = () => {
         focusedField={focusedField}
         setFocusedField={setFocusedField}
       />
+
+      <LazySection><LinkSection /></LazySection>
 
       <LazySection>
         <AboutUsSection 

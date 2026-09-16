@@ -45,6 +45,8 @@ interface CatalogResultsProps {
   // Reservations (page-level list, not per-book)
   reservations?: ReservationItem[];
   onCancelReservations?: (ids: string[]) => void;
+  // Which sub-view to open in on first mount: "results" (default) or "advanced"
+  initialView?: "results" | "advanced";
 }
 
 const LIST_VIEW_THRESHOLD = 6;
@@ -93,11 +95,14 @@ const CatalogResults = ({
   onAdvancedSearch,
   reservations,
   onCancelReservations,
+  initialView = "results",
 }: CatalogResultsProps) => {
   const [activeTab, setActiveTab] = useState<"Catalog" | "Authority">("Catalog");
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historyFilter, setHistoryFilter] = useState("");
-  const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
+  const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(
+    initialView === "advanced"
+  );
   const [isReservationListOpen, setIsReservationListOpen] = useState(false);
 
   const useListView = books.length >= LIST_VIEW_THRESHOLD;
