@@ -1,4 +1,6 @@
+// src/pages/CatalogPage.tsx
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import CatalogNavbar from "../Routes/Sections/CatalogSection/CatalogNavbar";
 import CatalogHeader from "../Routes/Sections/CatalogSection/CatalogHeader";
 import CatalogResults, { SearchHistoryItem } from "../Routes/Sections/CatalogSection/CatalogResults";
@@ -8,6 +10,10 @@ import { PLACEHOLDER_BOOKS } from "../hooks/constants";
 const ITEMS_PER_PAGE = 20;
 
 const CatalogPage = () => {
+  const [searchParams] = useSearchParams();
+  const initialView: "results" | "advanced" =
+    searchParams.get("view") === "advanced" ? "advanced" : "results";
+
   const [query, setQuery] = useState("");
   const [searchScope, setSearchScope] = useState("catalog");
   const [activeRange, setActiveRange] = useState<string | null>(null);
@@ -15,7 +21,6 @@ const CatalogPage = () => {
   const [bookmarkQuery, setBookmarkQuery] = useState("");
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(["1"]);
   const [currentPage, setCurrentPage] = useState(1);
-  
 
   // Navigation & History State
   const [isViewingHistory, setIsViewingHistory] = useState(false);
@@ -180,6 +185,7 @@ const CatalogPage = () => {
 
       <CatalogResults
         key={resetKey}
+        initialView={initialView}
         books={paginatedBooks}
         totalResultsCount={sortedAndDisplayedBooks.length}
         isSearching={isSearching}
