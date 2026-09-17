@@ -19,8 +19,8 @@ import {
   FiCopy,
 } from "react-icons/fi";
 import JsBarcode from "jsbarcode";
-import { DeweyDecimalSelect, DeweyItem } from "./components/deweyDecimal";
-
+import { DeweyDecimalSelect, DeweyItem } from "./bookRegister_components/deweyDecimal";
+import { Isbn, BookItem as IsbnSearchResult } from './bookRegister_components/isbn';
 // Dropdown constants
 const BOOK_TYPES = ["Fiction", "Non-Fiction", "Reference", "Textbook", "Periodical"];
 const FORMATS = ["Hardcover", "Paperback", "E-Book", "Audiobook"];
@@ -105,6 +105,19 @@ export default function BookRegistration() {
   const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
+  // Local ISBN Search Dropdown States & Fully Typed Interface
+  const [isbnOptions, setIsbnOptions] = useState<
+    Array<{
+      id?: number | string;
+      isbn: string;
+      title?: string;
+      summary?: string;
+      description?: string;
+      author?: string;
+    }>
+  >([]);
+  const [isIsbnDropdownOpen, setIsIsbnDropdownOpen] = useState<boolean>(false);
+
   // Typed HTML Refs
   const formTopRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -135,6 +148,39 @@ export default function BookRegistration() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  // ISBN Handlers & Local Backend API Fetch
+  const formatISBN = (val: string): string => {
+    const cleaned = val.replace(/[^0-9X]/gi, "");
+    return cleaned.slice(0, 13);
+  };
+
+  const handleIsbnChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatISBN(e.target.value);
+    setFormData((prev) => ({ ...prev, isbn: formatted }));
+  };
+
+  const handleSearchIsbn = async (query: string) => {
+    const cleanQuery = query.trim();
+    if (cleanQuery.length < 2) {
+      setIsbnOptions([]);
+      setIsIsbnDropdownOpen(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `/books/search-isbn?q=${encodeURIComponent(cleanQuery)}&limit=15`
+      );
+      const data = await res.json();
+      setIsbnOptions(Array.isArray(data) ? data : data.results || []);
+      setIsIsbnDropdownOpen(true);
+    } catch (error) {
+      console.error("Failed to fetch ISBN suggestions:", error);
+    }
+  };
+
+  
 
   const handleAddAuthor = () => {
     if (authorInput.trim()) {
@@ -381,23 +427,42 @@ export default function BookRegistration() {
             </div>
           </div>
 
-          {/* Form Fields (5/12 Desktop) */}
+          {/* Form */}
           <div className="lg:col-span-5 bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 sm:p-6 space-y-6">
             {/* Basic Info */}
             <div>
               <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wider mb-3">
                 Basic Information
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Title" span="md:col-span-2">
-                  <input
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    placeholder="Book title"
-                    className={inputClass}
-                  />
-                </Field>
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* ISBN Field with Autocomplete Dropdown */}
+                  <Field label="ISBN">
+                    <Isbn
+                      value={formData.isbn}
+                      onChange={(isbn: string, selectedBook?: IsbnSearchResult) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          isbn: isbn,
+                          title: selectedBook ? selectedBook.title : prev.title,
+                          description: selectedBook?.description ? selectedBook.description : prev.description,
+                        }))
+                      }
+                      className={inputClass}
+                    />
+                  </Field>
+
+                  <Field label="Title">
+                    <input
+                      name="title"
+                      value={formData.title}
+                      onChange={handleChange}
+                      placeholder="Book title"
+                      className={inputClass}
+                    />
+                  </Field>
+                </div>
 
                 <Field label="Authors" span="md:col-span-2">
                   <div className="space-y-2">
@@ -442,26 +507,6 @@ export default function BookRegistration() {
                   </div>
                 </Field>
 
-                <Field label="ISBN">
-                  <input
-                    name="isbn"
-                    value={formData.isbn}
-                    onChange={handleChange}
-                    placeholder="978-0-000000-0-0"
-                    className={inputClass}
-                  />
-                </Field>
-
-                {/* <Field label="Category">
-                  <input
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    placeholder="e.g. Programming, Fiction"
-                    className={inputClass}
-                  />
-                </Field> */}
-
                 <Field label="Book Type">
                   <select
                     name="bookType"
@@ -484,7 +529,7 @@ export default function BookRegistration() {
                 Classification
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Field label="Dewey Decimal ID">
+                <Field label="Dewey Decimal No">
                   <DeweyDecimalSelect
                     value={formData.deweyDecimalId}
                     onChange={(deweyNumber: string, selectedItem: DeweyItem | null) =>
@@ -723,7 +768,7 @@ export default function BookRegistration() {
                   <div
                     key={book.id}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border transition ${
-                      editingBookId === book.id
+                      editingBookId === String(book.id)
                         ? "bg-amber-50 border-amber-200"
                         : "bg-zinc-50 border-zinc-100 hover:border-indigo-200 hover:bg-indigo-50"
                     }`}
@@ -744,17 +789,25 @@ export default function BookRegistration() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-zinc-800 truncate">
-                          {book.title || "Untitled"}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm  text-zinc-800 ">
+                            Title:
+                          </p>
+                          <p className="text-sm font-semibold text-zinc-800 truncate">
+                            {book.title || "Untitled"}
+                          </p>
+                        </div>
                         <p className="text-xs text-zinc-500 truncate">
-                          {book.authors?.join(", ") || "Unknown author"}
+                          Authors: {book.authors?.join(", ") || "Unknown author"}
                         </p>
                         <p className="text-xs font-mono text-indigo-500 mt-1">
-                          {book.code}
+                          ISBN: {book.isbn || "N/A"}
                         </p>
-                        <p className="text-[11px] text-zinc-400 mt-0.5">
-                          {formatDate(book.registeredAt)}
+                        <p className="text-[11px] text-zinc-600 mt-0.5">
+                          Registered: {formatDate(book.registeredAt)}
+                        </p>
+                        <p className="text-[11px] text-zinc-600 mt-0.5">
+                          Condition: {book.condition || "N/A"} | Copies: {book.numberOfCopies} 
                         </p>
                       </div>
                     </button>
