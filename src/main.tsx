@@ -19,6 +19,8 @@ import DonatePage from "./public-client/Routes/DonatePage";
 import KnowledgeCornerPage from "./public-client/Routes/KnowledgeCornerPage";
 import GalleryPage from "./public-client/Routes/GalleryPage";
 
+import KioskHomepage from "./Features/kiosk/Routes/Homepage";
+
 
 import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/500.css";
@@ -50,8 +52,11 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/members" element={<Members />} />
           <Route path="/book-list" element={<BookList />} />
-          <Route path="/dewey-excel-uploader" element={<DeweyExcelUploader />} />
         </Route>
+
+          <Route path="/kiosk/app" element={<KioskHomepage/>} />
+        
+
 
       </Routes>
     </BrowserRouter>
