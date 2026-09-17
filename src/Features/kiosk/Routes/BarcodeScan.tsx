@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library'
+
 interface ScannedBook {
   isbn: string
 }
@@ -13,11 +15,11 @@ const BarcodeScan = ({ onClose }: BarcodeScanProps) => {
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const readerRef = useRef<{ stop: () => void } | null>(null)
+  const readerRef = useRef<BrowserMultiFormatReader | null>(null)
 
   const stopCamera = useCallback(() => {
     try {
-      readerRef.current?.stop()
+      readerRef.current?.reset()
     } catch (err) {
       console.error('Error resetting scanner', err)
     }
@@ -48,42 +50,22 @@ const BarcodeScan = ({ onClose }: BarcodeScanProps) => {
     }
 
     if (!videoRef.current) return
-    type BarcodeDetectorLike = new (options?: { formats?: string[] }) => {
-      detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue?: string }>>
-    }
-    const BarcodeDetector = (globalThis as typeof globalThis & {
-      BarcodeDetector?: BarcodeDetectorLike
-    }).BarcodeDetector
-
-    if (!BarcodeDetector) {
-      setScanError('Barcode scanning is not supported by this browser.')
-      stopCamera()
-      return
-    }
-
-    const detector = new BarcodeDetector({
-      formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'],
-    })
-    let active = true
-    readerRef.current = { stop: () => { active = false } }
-
-    const scan = async () => {
-      if (!active || !videoRef.current) return
-      try {
-        const results = await detector.detect(videoRef.current)
-        const isbn = results[0]?.rawValue
-        if (isbn) {
-          setScanned({ isbn })
+    const reader = new BrowserMultiFormatReader()
+    readerRef.current = reader
+    try {
+      await reader.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
+        if (result) {
+          setScanned({ isbn: result.getText() })
           stopCamera()
-          return
         }
-      } catch (err) {
-        console.error(err)
-      }
-      if (active) window.setTimeout(scan, 200)
+        if (err && !(err instanceof NotFoundException)) {
+          console.error(err)
+        }
+      })
+    } catch (err) {
+      console.error(err)
+      setScanError('Unable to start the scanner. Try again.')
     }
-
-    scan()
   }, [stopCamera])
 
   useEffect(() => {
