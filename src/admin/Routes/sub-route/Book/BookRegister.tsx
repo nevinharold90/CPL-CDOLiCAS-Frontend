@@ -19,8 +19,8 @@ import {
   FiCopy,
 } from "react-icons/fi";
 import JsBarcode from "jsbarcode";
-import { DeweyDecimalSelect, DeweyItem } from "./bookRegister_components/deweyDecimal";
-import { Isbn, BookItem as IsbnSearchResult } from './bookRegister_components/isbn';
+import { DeweyDecimalSelect, DeweyItem } from "./component/deweyDecimal";
+import { Isbn, BookItem as IsbnSearchResult } from './component/isbn';
 // Dropdown constants
 const BOOK_TYPES = ["Fiction", "Non-Fiction", "Reference", "Textbook", "Periodical"];
 const FORMATS = ["Hardcover", "Paperback", "E-Book", "Audiobook"];
