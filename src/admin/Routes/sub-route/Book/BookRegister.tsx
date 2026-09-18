@@ -20,7 +20,9 @@ import {
 } from "react-icons/fi";
 import JsBarcode from "jsbarcode";
 import { DeweyDecimalSelect, DeweyItem } from "./component/deweyDecimal";
-import { Isbn, BookItem as IsbnSearchResult } from './component/isbn';
+// Imported IsbnSearchResult directly from component to match API types
+import { Isbn, IsbnSearchResult } from "./component/isbn";
+
 // Dropdown constants
 const BOOK_TYPES = ["Fiction", "Non-Fiction", "Reference", "Textbook", "Periodical"];
 const FORMATS = ["Hardcover", "Paperback", "E-Book", "Audiobook"];
@@ -31,7 +33,9 @@ const SOURCE_OF_FUND = ["Government", "Donation", "Library Budget", "Grant"];
 export interface BookFormData {
   title: string;
   authors: string[];
-  isbn: string;
+  isbn13: string;
+  isbn11: string;
+  issn: string;
   category: string;
   bookType: string;
   deweyDecimalId: string;
@@ -70,13 +74,12 @@ const Field: React.FC<FieldProps> = ({ label, children, span = "" }) => (
   </div>
 );
 
-const inputClass =
-  "w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition";
-
 const initialFormState: BookFormData = {
   title: "",
   authors: [],
-  isbn: "",
+  isbn13: "",
+  isbn11: "",
+  issn: "",
   category: "",
   bookType: "",
   deweyDecimalId: "",
@@ -105,25 +108,15 @@ export default function BookRegistration() {
   const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // Local ISBN Search Dropdown States & Fully Typed Interface
-  const [isbnOptions, setIsbnOptions] = useState<
-    Array<{
-      id?: number | string;
-      isbn: string;
-      title?: string;
-      summary?: string;
-      description?: string;
-      author?: string;
-    }>
-  >([]);
-  const [isIsbnDropdownOpen, setIsIsbnDropdownOpen] = useState<boolean>(false);
-
   // Typed HTML Refs
   const formTopRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const barcodeRef = useRef<SVGSVGElement | null>(null);
+
+  const inputClass =
+    "w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition";
 
   // Generate Barcode when viewing a book in detail modal
   useEffect(() => {
@@ -141,7 +134,7 @@ export default function BookRegistration() {
     }
   }, [viewingBook]);
 
-  // Form Handlers
+  // General Form Input Handler
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -149,44 +142,92 @@ export default function BookRegistration() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ISBN Handlers & Local Backend API Fetch
-  const formatISBN = (val: string): string => {
-    const cleaned = val.replace(/[^0-9X]/gi, "");
-    return cleaned.slice(0, 13);
-  };
-
-  const handleIsbnChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatISBN(e.target.value);
-    setFormData((prev) => ({ ...prev, isbn: formatted }));
-  };
-
-  const handleSearchIsbn = async (query: string) => {
-    const cleanQuery = query.trim();
-    if (cleanQuery.length < 2) {
-      setIsbnOptions([]);
-      setIsIsbnDropdownOpen(false);
+  // ISBN Dropdown Selection Handler
+  const handleIsbnSelect = (isbn: string, selectedBook?: IsbnSearchResult) => {
+    if (!selectedBook) {
+      setFormData((prev) => ({ ...prev, isbn13: isbn }));
       return;
     }
 
-    try {
-      const res = await fetch(
-        `/books/search-isbn?q=${encodeURIComponent(cleanQuery)}&limit=15`
-      );
-      const data = await res.json();
-      setIsbnOptions(Array.isArray(data) ? data : data.results || []);
-      setIsIsbnDropdownOpen(true);
-    } catch (error) {
-      console.error("Failed to fetch ISBN suggestions:", error);
-    }
+    // Extract string names from author objects
+    const fetchedAuthors =
+      selectedBook.authors?.map((a) => a.full_name).filter(Boolean) || [];
+    const cls = selectedBook.classification;
+
+    setFormData((prev) => ({
+      ...prev,
+      isbn13: selectedBook.isbn13 || isbn,
+      isbn11: selectedBook.isbn11 || prev.isbn11,
+      issn: selectedBook.issn || prev.issn,
+      title: selectedBook.title || prev.title,
+      summary: selectedBook.summary || prev.summary,
+      description: selectedBook.description || prev.description,
+      authors: Array.from(new Set([...prev.authors, ...fetchedAuthors])),
+      category: prev.category || cls?.category || cls?.dewey_decimal?.class_name || "",
+      deweyDecimalId:
+        prev.deweyDecimalId ||
+        cls?.dewey_decimal?.dewey_number ||
+        (cls?.dewey_decimal_id ? String(cls.dewey_decimal_id) : ""),
+      cutter: prev.cutter || cls?.cutter || "",
+      yearPublished: prev.yearPublished || cls?.year_published || "",
+      placeOfPublication: prev.placeOfPublication || cls?.place_of_publication || "",
+      bookType: prev.bookType || cls?.book_type || "",
+    }));
   };
 
-  
+  // Generic Search Select Handler for ISBN/ISSN fields
+  const handleBookSelect = (
+    value: string,
+    fieldKey: "isbn13" | "isbn11" | "issn",
+    selectedBook?: IsbnSearchResult
+  ) => {
+    setFormData((prev) => {
+      if (!selectedBook) {
+        return { ...prev, [fieldKey]: value };
+      }
 
+      const fetchedAuthors =
+        selectedBook.authors?.map((a) => a.full_name).filter(Boolean) || [];
+      const cls = selectedBook.classification;
+
+      return {
+        ...prev,
+        [fieldKey]: value,
+        isbn13: prev.isbn13 || selectedBook.isbn13 || "",
+        isbn11: prev.isbn11 || selectedBook.isbn11 || "",
+        issn: prev.issn || selectedBook.issn || "",
+        title: prev.title || selectedBook.title || "",
+        authors: prev.authors.length > 0 ? prev.authors : fetchedAuthors,
+        description: prev.description || selectedBook.description || "",
+        summary: prev.summary || selectedBook.summary || "",
+        deweyDecimalId:
+          prev.deweyDecimalId ||
+          cls?.dewey_decimal?.dewey_number ||
+          (cls?.dewey_decimal_id ? String(cls.dewey_decimal_id) : ""),
+        category: prev.category || cls?.category || cls?.dewey_decimal?.class_name || "",
+        cutter: prev.cutter || cls?.cutter || "",
+        yearPublished: prev.yearPublished || cls?.year_published || "",
+        placeOfPublication: prev.placeOfPublication || cls?.place_of_publication || "",
+        bookType: prev.bookType || cls?.book_type || "",
+      };
+    });
+  };
+
+  // Dewey Decimal Selection Handler
+  const handleDeweySelect = (deweyNumber: string, item?: DeweyItem) => {
+    setFormData((prev) => ({
+      ...prev,
+      deweyDecimalId: deweyNumber,
+      category: item?.class_name || prev.category,
+    }));
+  };
+
+  // Author Handlers
   const handleAddAuthor = () => {
     if (authorInput.trim()) {
       setFormData((prev) => ({
         ...prev,
-        authors: [...prev.authors, authorInput.trim()],
+        authors: Array.from(new Set([...prev.authors, authorInput.trim()])),
       }));
       setAuthorInput("");
     }
@@ -337,19 +378,22 @@ export default function BookRegistration() {
     });
   };
 
-  // Search Filter
+  // Search Filter for Table
   const filteredRegisteredBooks = registeredBooks.filter((book) => {
     const q = listSearch.toLowerCase();
     return (
       book.title?.toLowerCase().includes(q) ||
       book.authors?.some((a) => a.toLowerCase().includes(q)) ||
-      book.isbn?.toLowerCase().includes(q) ||
+      book.isbn13?.toLowerCase().includes(q) ||
+      book.isbn11?.toLowerCase().includes(q) ||
+      book.issn?.toLowerCase().includes(q) ||
       book.code?.toLowerCase().includes(q)
     );
   });
 
+  
   return (
-    <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-linear-to-b from-zinc-50 to-white font-[Poppins]">
+    <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-linear-to-b from-zinc-50 to-white font-[Poppins] overflow-x-hidden">
       <div className="max-w-[1600px] mx-auto space-y-5 sm:space-y-6" ref={formTopRef}>
         {/* Header */}
         <div className="flex flex-wrap items-center gap-3">
@@ -365,8 +409,8 @@ export default function BookRegistration() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
           {/* Cover Image Upload (3/12 Desktop) */}
-          <div className="lg:col-span-3">
-            <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-5 space-y-4">
+          <div className="lg:col-span-3 min-w-0">
+            <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 sm:p-5 space-y-4">
               <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wider">
                 Book Cover
               </h2>
@@ -397,20 +441,20 @@ export default function BookRegistration() {
                 </div>
               )}
 
-              <div className="flex gap-3 max-w-xs mx-auto lg:max-w-none">
+              <div className="flex gap-2 sm:gap-3 max-w-xs mx-auto lg:max-w-none">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg text-sm font-medium cursor-pointer transition"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg text-sm font-medium cursor-pointer transition min-w-0"
                 >
-                  <FiUpload size={15} />
-                  Upload
+                  <FiUpload size={15} className="shrink-0" />
+                  <span className="truncate">Upload</span>
                 </button>
                 <button
                   onClick={startCamera}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium cursor-pointer transition"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium cursor-pointer transition min-w-0"
                 >
-                  <FiCamera size={15} />
-                  Capture
+                  <FiCamera size={15} className="shrink-0" />
+                  <span className="truncate">Capture</span>
                 </button>
               </div>
 
@@ -427,84 +471,58 @@ export default function BookRegistration() {
             </div>
           </div>
 
-          {/* Form */}
-          <div className="lg:col-span-5 bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 sm:p-6 space-y-6">
-            {/* Basic Info */}
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wider mb-3">
-                Basic Information
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Form Section (5/12 Desktop) */}
+          <div className="lg:col-span-5 min-w-0 bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 sm:p-6 space-y-6">
+          {/* Basic Info */}
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wider mb-3">
+              Basic Information
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* ISBN13 */}
+                <Field label="ISBN13">
+                  <Isbn
+                    value={formData.isbn13}
+                    onChange={(val: string, selectedBook?: IsbnSearchResult) =>
+                      handleBookSelect(val, "isbn13", selectedBook)
+                    }
+                    className={inputClass}
+                  />
+                </Field>
 
-                {/* ISBN Field with Autocomplete Dropdown */}
-                  <Field label="ISBN">
-                    <Isbn
-                      value={formData.isbn}
-                      onChange={(isbn: string, selectedBook?: IsbnSearchResult) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          isbn: isbn,
-                          title: selectedBook ? selectedBook.title : prev.title,
-                          description: selectedBook?.description ? selectedBook.description : prev.description,
-                        }))
-                      }
-                      className={inputClass}
-                    />
-                  </Field>
+                {/* ISBN11 */}
+                <Field label="ISBN11">
+                  <Isbn
+                    value={formData.isbn11}
+                    onChange={(val: string, selectedBook?: IsbnSearchResult) =>
+                      handleBookSelect(val, "isbn11", selectedBook)
+                    }
+                    className={inputClass}
+                  />
+                </Field>
 
-                  <Field label="Title">
-                    <input
-                      name="title"
-                      value={formData.title}
-                      onChange={handleChange}
-                      placeholder="Book title"
-                      className={inputClass}
-                    />
-                  </Field>
-                </div>
+                {/* ISSN */}
+                <Field label="ISSN">
+                  <Isbn
+                    value={formData.issn}
+                    onChange={(val: string, selectedBook?: IsbnSearchResult) =>
+                      handleBookSelect(val, "issn", selectedBook)
+                    }
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
 
-                <Field label="Authors" span="md:col-span-2">
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={authorInput}
-                        onChange={(e) => setAuthorInput(e.target.value)}
-                        onKeyDown={handleAuthorKeyDown}
-                        placeholder="Type author name and press Enter"
-                        className={inputClass}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddAuthor}
-                        className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition cursor-pointer shrink-0"
-                      >
-                        Add
-                      </button>
-                    </div>
-
-                    {/* Author Tags Display */}
-                    {formData.authors.length > 0 && (
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {formData.authors.map((author, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-200"
-                          >
-                            {author}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAuthor(index)}
-                              className="text-indigo-400 hover:text-indigo-900 cursor-pointer rounded-full p-0.5"
-                            >
-                              <FiX size={12} />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Title">
+                  <input
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    placeholder="Book title"
+                    className={inputClass}
+                  />
                 </Field>
 
                 <Field label="Book Type">
@@ -521,14 +539,58 @@ export default function BookRegistration() {
                   </select>
                 </Field>
               </div>
+
+              {/* Authors Field */}
+              <Field label="Authors" span="col-span-1">
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={authorInput}
+                      onChange={(e) => setAuthorInput(e.target.value)}
+                      onKeyDown={handleAuthorKeyDown}
+                      placeholder="Type author name and press Enter"
+                      className={inputClass}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddAuthor}
+                      className="px-4 sm:px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition cursor-pointer shrink-0"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {formData.authors.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {formData.authors.map((author, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-200"
+                        >
+                          {author}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAuthor(index)}
+                            className="text-indigo-400 hover:text-indigo-900 cursor-pointer rounded-full p-0.5"
+                          >
+                            <FiX size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Field>
             </div>
+          </div>
 
             {/* Classification */}
             <div>
               <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wider mb-3">
                 Classification
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <Field label="Dewey Decimal No">
                   <DeweyDecimalSelect
                     value={formData.deweyDecimalId}
@@ -615,7 +677,7 @@ export default function BookRegistration() {
               <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wider mb-3">
                 Inventory
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Location">
                   <input
                     name="location"
@@ -726,14 +788,14 @@ export default function BookRegistration() {
           </div>
 
           {/* Registered Books List (4/12 Desktop) */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 min-w-0">
             <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 sm:p-5 flex flex-col max-h-[70vh] lg:max-h-[85vh]">
               <div className="flex items-center gap-2 mb-4">
-                <FiBook className="text-indigo-600" size={20} />
-                <h2 className="text-sm sm:text-base font-semibold text-zinc-700 uppercase tracking-wider">
+                <FiBook className="text-indigo-600 shrink-0" size={20} />
+                <h2 className="text-sm sm:text-base font-semibold text-zinc-700 uppercase tracking-wider truncate">
                   Registered Books
                 </h2>
-                <span className="ml-auto text-xs font-medium bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full">
+                <span className="ml-auto text-xs font-medium bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full shrink-0">
                   {registeredBooks.length}
                 </span>
               </div>
@@ -747,7 +809,7 @@ export default function BookRegistration() {
                   type="text"
                   value={listSearch}
                   onChange={(e) => setListSearch(e.target.value)}
-                  placeholder="Search by title, author, ISBN, code..."
+                  placeholder="Search by title, author, ISBN13, ISBN11, ISSN, code..."
                   className="w-full pl-10 pr-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                 />
               </div>
@@ -789,8 +851,8 @@ export default function BookRegistration() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-sm  text-zinc-800 ">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-sm text-zinc-800 shrink-0">
                             Title:
                           </p>
                           <p className="text-sm font-semibold text-zinc-800 truncate">
@@ -800,14 +862,20 @@ export default function BookRegistration() {
                         <p className="text-xs text-zinc-500 truncate">
                           Authors: {book.authors?.join(", ") || "Unknown author"}
                         </p>
-                        <p className="text-xs font-mono text-indigo-500 mt-1">
-                          ISBN: {book.isbn || "N/A"}
+                        <p className="text-xs font-mono text-indigo-500 mt-1 truncate">
+                          ISBN13: {book.isbn13 || "N/A"}
                         </p>
-                        <p className="text-[11px] text-zinc-600 mt-0.5">
+                        <p className="text-xs font-mono text-indigo-500 mt-1 truncate">
+                          ISBN11: {book.isbn11 || "N/A"}
+                        </p>
+                        <p className="text-xs font-mono text-indigo-500 mt-1 truncate">
+                          ISSN: {book.issn || "N/A"}
+                        </p>
+                        <p className="text-[11px] text-zinc-600 mt-0.5 truncate">
                           Registered: {formatDate(book.registeredAt)}
                         </p>
-                        <p className="text-[11px] text-zinc-600 mt-0.5">
-                          Condition: {book.condition || "N/A"} | Copies: {book.numberOfCopies} 
+                        <p className="text-[11px] text-zinc-600 mt-0.5 truncate">
+                          Condition: {book.condition || "N/A"} | Copies: {book.numberOfCopies}
                         </p>
                       </div>
                     </button>
@@ -933,7 +1001,7 @@ export default function BookRegistration() {
                   <p className="text-xs text-zinc-500">
                     Published {viewingBook.yearPublished || "N/A"}
                     {viewingBook.placeOfPublication ? ` in ${viewingBook.placeOfPublication}` : ""}
-                  </p>
+                  </p>f
 
                   <div className="pt-2 flex items-center gap-2">
                     <span className="text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md border border-indigo-100">
@@ -958,8 +1026,16 @@ export default function BookRegistration() {
               {/* Metadata Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
-                  <span className="text-zinc-400 block mb-0.5">ISBN</span>
-                  <span className="font-semibold text-zinc-700">{viewingBook.isbn || "N/A"}</span>
+                  <span className="text-zinc-400 block mb-0.5">ISBN13</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.isbn13 || "N/A"}</span>
+                </div>
+                <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+                  <span className="text-zinc-400 block mb-0.5">ISBN11</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.isbn11 || "N/A"}</span>
+                </div>
+                <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+                  <span className="text-zinc-400 block mb-0.5">ISSN</span>
+                  <span className="font-semibold text-zinc-700">{viewingBook.issn || "N/A"}</span>f
                 </div>
                 <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
                   <span className="text-zinc-400 block mb-0.5">Dewey Decimal</span>

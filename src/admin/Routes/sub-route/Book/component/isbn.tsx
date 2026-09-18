@@ -1,31 +1,51 @@
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
-import api from '../../../../../_api/axios'; // Direct import to your axios.ts file
+import api from '../../../../../_api/axios';
 
-export interface BookItem {
-  id?: number;
-  isbn: string;
-  title: string;
-  summary?: string | null;
-  description?: string | null;
+export interface Author {
+  id: number;
+  full_name: string;
 }
 
-export interface BookItem {
+export interface DeweyDecimal {
+  id: number;
+  dewey_number: string;
+  class_name: string;
+}
+
+export interface BookClassification {
+  id: number;
+  book_id: number;
+  dewey_decimal_id: number;
+  book_type?: string;
+  cutter?: string;
+  year_published?: string;
+  category?: string;
+  place_of_publication?: string;
+  dewey_decimal?: DeweyDecimal;
+}
+
+export interface IsbnSearchResult {
   id?: number;
-  isbn: string;
+  isbn11?: string | null;
+  isbn13?: string | null;
+  issn?: string | null;
   title: string;
   summary?: string | null;
   description?: string | null;
+  image_url?: string | null;
+  authors?: Author[];
+  classification?: BookClassification;
 }
 
 interface IsbnProps {
   value: string;
-  onChange: (isbn: string, selectedBook?: BookItem) => void;
+  onChange: (isbn: string, selectedBook?: IsbnSearchResult) => void;
   className?: string;
 }
 
 export function Isbn({ value, onChange, className }: IsbnProps) {
   const [query, setQuery] = useState<string>(value || '');
-  const [results, setResults] = useState<BookItem[]>([]);
+  const [results, setResults] = useState<IsbnSearchResult[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -46,7 +66,7 @@ export function Isbn({ value, onChange, className }: IsbnProps) {
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const response = await api.get<BookItem[]>('/books/search-isbn', {
+        const response = await api.get<IsbnSearchResult[]>('/books/search-isbn', {
           params: { q: query.trim() },
           signal: controller.signal,
         });
@@ -76,9 +96,12 @@ export function Isbn({ value, onChange, className }: IsbnProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = (book: BookItem) => {
-    setQuery(book.isbn);
-    onChange(book.isbn, book);
+  const handleSelect = (book: IsbnSearchResult) => {
+    const selectedIsbn = book.isbn13 || book.isbn11 || book.issn || '';
+    setQuery(selectedIsbn);
+    
+    // Passes both the string ISBN and the full book object up to the parent
+    onChange(selectedIsbn, book); 
     setIsOpen(false);
   };
 
@@ -96,7 +119,7 @@ export function Isbn({ value, onChange, className }: IsbnProps) {
         value={query}
         onFocus={() => setIsOpen(true)}
         onChange={handleInputChange}
-        placeholder="Type ISBN or Title..."
+        placeholder="Type ISBN, ISSN, Title, or Author..."
         className={className}
         autoComplete="off"
       />
@@ -106,25 +129,33 @@ export function Isbn({ value, onChange, className }: IsbnProps) {
           {isLoading ? (
             <div className="p-3 text-zinc-400 text-center text-xs">Searching books...</div>
           ) : results.length === 0 ? (
-            <div className="p-3 text-zinc-400 text-center text-xs">No matching ISBN or Title</div>
+            <div className="p-3 text-zinc-400 text-center text-xs">No matching results</div>
           ) : (
-            results.map((book) => (
-              <button
-                key={book.id || book.isbn}
-                type="button"
-                onClick={() => handleSelect(book)}
-                className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 transition border-b border-zinc-50 last:border-0 cursor-pointer group"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono font-bold text-indigo-600 group-hover:text-indigo-700">
-                    {book.isbn}
-                  </span>
-                  <span className="text-xs font-medium text-zinc-700 truncate max-w-[200px]">
-                    {book.title}
-                  </span>
-                </div>
-              </button>
-            ))
+            results.map((book) => {
+              const displayIsbn = book.isbn13 || book.isbn11 || book.issn || 'No Identifier';
+              const authorNames = book.authors?.map((a) => a.full_name).join(', ') || 'Unknown Author';
+
+              return (
+                <button
+                  key={book.id || displayIsbn}
+                  type="button"
+                  onClick={() => handleSelect(book)}
+                  className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 transition border-b border-zinc-50 last:border-0 cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono font-bold text-indigo-600 group-hover:text-indigo-700 text-xs">
+                      {displayIsbn}
+                    </span>
+                    <span className="text-xs font-semibold text-zinc-800 truncate max-w-[220px]">
+                      {book.title}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                    by {authorNames}
+                  </p>
+                </button>
+              );
+            })
           )}
         </div>
       )}
