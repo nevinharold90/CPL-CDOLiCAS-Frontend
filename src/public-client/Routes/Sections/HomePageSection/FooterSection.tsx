@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Logo from "../../../assets/logo.png";
 import PhoneIcon from "../../../assets/phone.png";
 import EmailIcon from "../../../assets/email.png"
@@ -6,6 +7,7 @@ import LocationIcon from "../../../assets/gps.png";
 import ClockIcon from "../../../assets/clock.png";
 import FacebookIcon from "../../../assets/facebook.png";
 import MapIcon from "../../../assets/google-maps.png"
+import { reopenCookieConsent } from "../../../components/Cookieconsent";
 
 const FooterSection = () => {
   return (
@@ -71,12 +73,12 @@ const FooterSection = () => {
           <div className="md:col-span-3">
             <h4 className="text-lg font-semibold mb-6 tracking-widest text-blue-200">QUICK LINKS</h4>
             <div className="space-y-3 text-blue-100">
-              <a href="/" className="block hover:text-white transition-colors">Home</a>
+              <Link to="/" className="block hover:text-white transition-colors">Home</Link>
               <a href="#about-us" className="block hover:text-white transition-colors">About Us</a>
               <a href="#knowledge" className="block hover:text-white transition-colors">Knowledge Corner</a>
-              <a href="/catalog" className="block hover:text-white transition-colors">Catalog</a>
-              <a href="/events" className="block hover:text-white transition-colors">Events &amp; Programs</a>
-              <a href="/gallery" className="block hover:text-white transition-colors">Photo Gallery</a>
+              <Link to="/catalog" className="block hover:text-white transition-colors">Catalog</Link>
+              <Link to="/events" className="block hover:text-white transition-colors">Events &amp; Programs</Link>
+              <Link to="/gallery" className="block hover:text-white transition-colors">Photo Gallery</Link>
             </div>
           </div>
 
@@ -148,9 +150,17 @@ const FooterSection = () => {
             © {new Date().getFullYear()} City Public Library • Cagayan de Oro City. All Rights Reserved.
           </div>
           
-          <div className="flex gap-6">
-            <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
+          <div className="flex flex-wrap justify-center gap-6">
+            <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link>
+            <Link to="/cookies" className="hover:text-white transition-colors">Cookie Policy</Link>
+            <button
+              type="button"
+              onClick={reopenCookieConsent}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Cookie Settings
+            </button>
             <a href="/accessibility" className="hover:text-white transition-colors">Accessibility</a>
           </div>
 

@@ -36,6 +36,8 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const [signupStep, setSignupStep] = useState<1 | 2>(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showFullTerms, setShowFullTerms] = useState(false);
 
   // 2. Declare custom hooks unconditionally
   const {
@@ -67,6 +69,8 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     setActiveTab('login');
     setSignupStep(1);
     setCustomError(null);
+    setAgreedToTerms(false);
+    setShowFullTerms(false);
     onClose();
   };
 
@@ -74,6 +78,12 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const handleSignupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCustomError(null);
+
+    // Terms and Conditions must be accepted
+    if (!agreedToTerms) {
+      setCustomError('Please agree to the Terms and Conditions to create an account.');
+      return;
+    }
 
     // Strict Gmail validation check
     const emailVal = form.email?.trim().toLowerCase() || '';
@@ -489,6 +499,66 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                         </button>
                       </div>
 
+                      {/* Terms and Conditions */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            id="agree_terms"
+                            checked={agreedToTerms}
+                            onChange={(e) => setAgreedToTerms(e.target.checked)}
+                            disabled={signupLoading}
+                            className="mt-0.5 w-4 h-4 text-[#025aa7] rounded border-gray-300 focus:ring-[#025aa7] cursor-pointer"
+                          />
+                          <label htmlFor="agree_terms" className="text-xs text-gray-600 leading-relaxed cursor-pointer select-none">
+                            I have read and agree to the{' '}
+                            <button
+                              type="button"
+                              onClick={() => setShowFullTerms((v) => !v)}
+                              className="text-[#025aa7] font-semibold underline underline-offset-2 hover:text-[#024d8f]"
+                            >
+                              Terms and Conditions
+                            </button>
+                            .
+                          </label>
+                        </div>
+
+                        {showFullTerms && (
+                          <div className="mt-3 max-h-40 overflow-y-auto rounded-lg bg-white border border-gray-100 p-3 text-[11px] leading-relaxed text-gray-500 space-y-2">
+                            <p>
+                              <strong className="text-gray-700">Membership.</strong> You confirm the details
+                              provided are accurate and agree to keep them up to date.
+                            </p>
+                            <p>
+                              <strong className="text-gray-700">Borrowing.</strong> Items borrowed under this
+                              account must be returned by their due date; overdue or lost items may incur fines
+                              per the library's fee schedule.
+                            </p>
+                            <p>
+                              <strong className="text-gray-700">Conduct.</strong> You agree not to misuse
+                              library systems, equipment, or your borrowing privileges.
+                            </p>
+                            <p>
+                              <strong className="text-gray-700">Privacy.</strong> Your information is used only
+                              for library administration and is not shared with third parties except as
+                              required by law.
+                            </p>
+                            <p>
+                              Read the full{' '}
+                              <a
+                                href="/terms"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#025aa7] underline"
+                              >
+                                Terms and Conditions
+                              </a>{' '}
+                              for complete details.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="flex items-center gap-3 pt-2">
                         <button
                           type="button"
@@ -500,8 +570,8 @@ function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                         </button>
                         <button
                           type="submit"
-                          disabled={signupLoading}
-                          className="w-2/3 py-3.5 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-semibold rounded-xl shadow-lg shadow-[#025aa7]/20 disabled:opacity-60 transition-all cursor-pointer flex items-center justify-center gap-2"
+                          disabled={signupLoading || !agreedToTerms}
+                          className="w-2/3 py-3.5 bg-[#025aa7] hover:bg-[#024d8f] text-white text-sm font-semibold rounded-xl shadow-lg shadow-[#025aa7]/20 disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2"
                         >
                           {signupLoading ? (
                             <>

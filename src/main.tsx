@@ -18,6 +18,10 @@ import CatalogPage from "./public-client/Routes/CatalogPage";
 import DonatePage from "./public-client/Routes/DonatePage";
 import KnowledgeCornerPage from "./public-client/Routes/KnowledgeCornerPage";
 import GalleryPage from "./public-client/Routes/GalleryPage";
+import TermsAndConditions from "./public-client/Routes/Termsandconditions";
+import PrivacyPolicy from "./public-client/Routes/Privacypolicy";
+import CookiePolicy from "./public-client/Routes/Cookiepolicy";
+import CookieConsent from "./public-client/components/Cookieconsent";
 
 import KioskHomepage from "./Features/kiosk/Routes/Homepage";
 
@@ -41,6 +45,9 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/donate" element={<DonatePage />} />
         <Route path="/knowledge-corner" element={<KnowledgeCornerPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/cookies" element={<CookiePolicy />} />
 
         {/* ========== STANDALONE ADMIN PAGES (no sidebar, own tab) ========== */}
         <Route path="/book-list/book-registration" element={<BookRegister />} />
@@ -59,6 +66,7 @@ createRoot(document.getElementById("root")!).render(
 
 
       </Routes>
+      <CookieConsent />
     </BrowserRouter>
   </StrictMode>
 );

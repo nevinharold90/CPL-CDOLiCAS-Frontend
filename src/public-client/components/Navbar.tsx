@@ -110,7 +110,7 @@ const handleLogout = async () => {
   return (
     <>
       {loggingOut && (
-        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-center">
+        <div className="fixed inset-0 z-70 bg-zinc-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-center">
           <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4" />
           <h3 className="text-lg font-semibold text-zinc-100">
             Logging out...
